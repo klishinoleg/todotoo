@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+    spec:
+      containers:
+        - name: pgbouncer
+          image: edoburu/pgbouncer:v1.24.0-p0
+          ports:
+            - containerPort: 6432
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pgbouncer
+            - name: users
+              mountPath: /etc/pgbouncer/users
+      volumes:
+        - name: config
+          configMap:
+            name: pgbouncer-config
+            items:
+              - key: pgbouncer.ini
+                path: pgbouncer.ini
+        - name: users
+          secret:
+            items:
+              - key: users.txt
+                path: users.txt

@@ -1,0 +1,67 @@
+[project]
+name = "todotoo-club"
+version = "0.1.0"
+description = "ToDoToo Club — hyperlocal platform for spontaneous meetups and activities."
+authors = [{ name = "Oleg Klishin", email = "klishinoleg@email.com" }]
+license = "MIT"
+requires-python = ">=3.14"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+python_files = [
+    "tests/test_*.py",
+    "tests/**/test_*.py"
+]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+python_version = "3.14"
+explicit_package_bases = true
+namespace_packages = true
+mypy_path = "app"
+ignore_missing_imports = true
+strict_optional = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+
+[[tool.mypy.overrides]]
+module = "aiofiles"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "aiofiles.os"
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = [
+    "E203", # whitespace before :
+    "W503"   # line break before binary operator
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "build",
+    "dist",
+    "__init__.py"
+]
+per-file-ignores = { "__init__.py" = "F401" }
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+line_length = 120
+known_first_party = [
+    "app",
+    "domain",
+    "infrastructure",
+    "interfaces",
+    "core",
+    "events",
+    "tests"
+]

@@ -1,0 +1,5 @@
+app/data/
+app/uploads/
+.venv
+help
+node_modules

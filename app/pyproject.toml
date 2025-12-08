@@ -1,0 +1,14 @@
+[tool.aerich]
+tortoise_orm = "core.db.TORTOISE_ORM_DIRECT"
+location = "./migrations"
+src_folder = "./"
+
+
+[project]
+name = "app"
+version = "0.1.0"
+dependencies = ["typer"]
+
+[project.scripts]
+app = "interfaces.cmd.app:app"
+
