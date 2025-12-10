@@ -1,7 +1,7 @@
 from tortoise.queryset import QuerySet
 
 from core.di.repository import DIRepository
-from core.enums.di.repository import RepositoryType
+from core.enums.di.repository import RepositoryType, FilterFieldType
 from domain.base.filters.geometry_filter import GeometryFilterField
 from domain.base.value_objects.geometry import GeometryPolygon, GeometryPoint
 from infrastructure.repository.tortoise.base.geo.convert import (
@@ -61,4 +61,4 @@ class TortoiseGeometryFilterField(GeometryFilterField[QuerySet]):
         )
 
 
-DIRepository.register_filter(TortoiseGeometryFilterField, RepositoryType.TORTOISE)
+DIRepository.register_filter(FilterFieldType.GEOMETRY, TortoiseGeometryFilterField, RepositoryType.TORTOISE)

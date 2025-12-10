@@ -4,17 +4,7 @@ from abc import ABC
 from domain.base.filters.base_filter import BaseFilterField
 
 
-class StringEqualFilterField[Q](BaseFilterField[Q], ABC):
-    value: str
-
-
-class StringContainsFilterField[Q](BaseFilterField[Q], ABC):
-    value: str
-
-
-class StringStartsWithFilterField[Q](BaseFilterField[Q], ABC):
-    value: str
-
-
-class StringEndsWithFilterField[Q](BaseFilterField[Q], ABC):
-    value: str
+class TextFilterField[Q](BaseFilterField[Q], ABC):
+    contains: str | None = None
+    start: str | None = None
+    end: str | None = None

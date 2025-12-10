@@ -1,7 +1,7 @@
 from tortoise.queryset import QuerySet
 
 from core.di.repository import DIRepository
-from core.enums.di.repository import RepositoryType
+from core.enums.di.repository import RepositoryType, FilterFieldType
 from domain.base.filters.bool_filter import BoolFilterField
 
 
@@ -17,4 +17,4 @@ class TortoiseBoolFilterField(BoolFilterField[QuerySet]):
         return query.filter(**{name: self.value})
 
 
-DIRepository.register_filter(TortoiseBoolFilterField, RepositoryType.TORTOISE)
+DIRepository.register_filter(FilterFieldType.BOOLEAN, TortoiseBoolFilterField, RepositoryType.TORTOISE)

@@ -1,18 +1,21 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace, asdict
+from typing import Self
 
+from core.di.access_control import DIPasswordHasherProvider
 from core.di.auth import DIAuthProviderData
 from core.enums.app.account.auth_provider import AuthProviderType
-from domain.account.entities.auth.provider_data import BaseProviderData
+from domain.account.entities.auth.provider_data import BaseAuthProviderData
 from infrastructure.auth.providers.registration.registration_types import RegistrationInitData
 
 
 @dataclass(slots=True)
-class RegistrationProviderData(BaseProviderData):
+class RegistrationProviderData(BaseAuthProviderData):
     """
     Domain-level provider data for email/password registration.
     """
 
     _data: RegistrationInitData
+    provider_id_type = str
 
     def __init__(self, provider_raw_data: dict) -> None:
         super().__init__(provider_raw_data)
@@ -21,7 +24,7 @@ class RegistrationProviderData(BaseProviderData):
     def get_user_id(self) -> str:
         return self._data.email
 
-    def get_username(self) -> str | None:
+    def get_username(self) -> str:
         return self._data.email
 
     def get_public_name(self) -> str | None:
@@ -38,6 +41,19 @@ class RegistrationProviderData(BaseProviderData):
 
     def get_contact_url(self) -> str | None:
         return f"mailto:{self._data.email}"
+
+    def is_valid(self) -> bool:
+        return self._data.password == self._data.confirm_password
+
+    def prepare_for_storage(self) -> Self:
+        if self._data.password:
+            _data = replace(self._data,
+                            password_hash=DIPasswordHasherProvider.get().hash(self._data.password),
+                            password="",
+                            confirm_password=""
+                            )
+            return replace(self, _data=_data, _provider_raw_data=asdict(_data))
+        return self
 
 
 DIAuthProviderData.register(AuthProviderType.TELEGRAM, RegistrationProviderData)

@@ -1,4 +1,6 @@
 from abc import ABC
+from typing import cast, Any, Set
+
 from core.di.repository import DIRepository
 from core.enums.di.repository import RepositoryType
 from domain.base.entity import BaseEntity
@@ -6,7 +8,7 @@ from domain.base.filters.base_filter import BaseFilter
 from domain.base.repository import BaseRepository
 
 
-class BaseService[T: BaseEntity, FD: BaseFilter](ABC):
+class BaseService[T: BaseEntity, FD: BaseFilter, BR: BaseRepository](ABC):
     """
     Base application-level service.
 
@@ -17,10 +19,10 @@ class BaseService[T: BaseEntity, FD: BaseFilter](ABC):
 
     Notes:
     - This class does NOT contain business logic by design.
-    - This is a thin convenience wrapper over BaseRepository.
+    - This is a thin convenience wrapper over BaseRepository.7
     """
 
-    repository: BaseRepository[T, FD]
+    repository: BR
 
     def __init__(
             self,
@@ -28,7 +30,7 @@ class BaseService[T: BaseEntity, FD: BaseFilter](ABC):
             repository_type: RepositoryType | None = None,
     ):
         # Resolve concrete repo implementation
-        self.repository = DIRepository.get(entity_cls, repository_type)
+        self.repository = DIRepository[BR].get(entity_cls, repository_type)
 
     # ---------------------------------------------------------
     # CRUD passthrough
@@ -41,10 +43,12 @@ class BaseService[T: BaseEntity, FD: BaseFilter](ABC):
         return await self.repository.get_many(ids)
 
     async def create(self, entity: T) -> T:
-        return await self.repository.create(entity)
+        result = await self.repository.create(entity)
+        return cast(T, result)
 
-    async def save(self, entity: T) -> T:
-        return await self.repository.save(entity)
+    async def save(self, entity: T, update_fields: Set[str] | None = None) -> T:
+        result = await self.repository.save(entity, update_fields=update_fields)
+        return cast(T, result)
 
     async def bulk_create(self, entities: list[T]) -> list[T]:
         return await self.repository.bulk_create(entities)

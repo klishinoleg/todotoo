@@ -5,7 +5,7 @@ from domain.event.entities.event_member import EventMemberEntity
 from domain.event.repositories.event_member import EventMemberRepository, EventMemberFilter
 
 
-class EventMemberService(BaseService[EventMemberEntity, EventMemberFilter]):
+class EventMemberService(BaseService[EventMemberEntity, EventMemberFilter, EventMemberRepository]):
     """
     Application-level service for working with EventMemberEntity.
 

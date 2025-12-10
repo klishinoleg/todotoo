@@ -1,7 +1,7 @@
 from tortoise.queryset import QuerySet
 
 from core.di.repository import DIRepository
-from core.enums.di.repository import RepositoryType
+from core.enums.di.repository import RepositoryType, FilterFieldType
 from domain.base.filters.equal_filter import EqualFilterField
 
 
@@ -30,4 +30,5 @@ class TortoiseEqualFilterField[T](EqualFilterField[T, QuerySet]):
         # no filtering applied
         return query
 
-DIRepository.register_filter(TortoiseEqualFilterField, RepositoryType.TORTOISE)
+
+DIRepository.register_filter(FilterFieldType.EQUAL, TortoiseEqualFilterField, RepositoryType.TORTOISE)

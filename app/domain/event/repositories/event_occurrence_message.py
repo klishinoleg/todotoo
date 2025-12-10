@@ -5,7 +5,7 @@ from domain.base.filters.base_filter import BaseFilter
 from domain.base.filters.bool_filter import BoolFilterField
 from domain.base.filters.equal_filter import EqualFilterField
 from domain.base.filters.range_filter import RangeFilterField
-from domain.base.filters.string_filters import StringContainsFilterField
+from domain.base.filters.string_filters import TextFilterField
 from domain.base.repository import BaseRepository
 from domain.event.entities.event_occurrence_message import EventOccurrenceMessageEntity
 
@@ -30,7 +30,7 @@ class EventOccurrenceMessageFilter[Q](BaseFilter[Q]):
     event_member_id: EqualFilterField[int, Q] | None = None
     """Filter messages authored by a specific event member."""
 
-    text: StringContainsFilterField[Q] | None = None
+    text: TextFilterField[Q] | None = None
     """Substring search over message text."""
 
     created_at: RangeFilterField[datetime, Q] | None = None

@@ -2,11 +2,11 @@ from core.enums.di.repository import RepositoryType
 from application.base.service.base_service import BaseService
 
 from domain.event.entities.event_schedule_rule import EventScheduleRuleEntity
-from domain.event.repositories.event_schedule_rule import EventScheduleRuleFilter
+from domain.event.repositories.event_schedule_rule import EventScheduleRuleFilter, EventScheduleRuleRepository
 
 
 class EventScheduleRuleService(
-    BaseService[EventScheduleRuleEntity, EventScheduleRuleFilter]):
+    BaseService[EventScheduleRuleEntity, EventScheduleRuleFilter, EventScheduleRuleRepository]):
     """
     Application-level service for working with EventScheduleRuleEntity.
 

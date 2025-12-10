@@ -1,13 +1,18 @@
+import hashlib
+import hmac
 from dataclasses import dataclass
+from typing import Self
+from urllib.parse import unquote
 
+from core.config.settings import settings
 from core.di.auth import DIAuthProviderData
 from core.enums.app.account.auth_provider import AuthProviderType
-from domain.account.entities.auth.provider_data import BaseProviderData
+from domain.account.entities.auth.provider_data import BaseAuthProviderData
 from infrastructure.auth.providers.telegram.telegram_types import TelegramInitData, TgUser
 
 
 @dataclass(slots=True)
-class TelegramProviderData(BaseProviderData):
+class TelegramProviderData(BaseAuthProviderData):
     """
     Domain-level structure for working with Telegram provider data.
     Converts validated raw dict into typed TelegramInitData.
@@ -15,6 +20,7 @@ class TelegramProviderData(BaseProviderData):
 
     _telegram_data: TelegramInitData
     _u: TgUser
+    provider_id_type = int
 
     def __init__(self, provider_raw_data: dict) -> None:
         super().__init__(provider_raw_data)
@@ -25,13 +31,13 @@ class TelegramProviderData(BaseProviderData):
         # Quick access to user
         self._u = self._telegram_data.user
 
-    # -------- unified BaseProviderData interface --------
+    # -------- unified BaseAuthProviderData interface --------
 
     def get_user_id(self) -> str | int:
         return self._u.id
 
-    def get_username(self) -> str | None:
-        return self._u.username
+    def get_username(self) -> str:
+        return self._u.username or f"TG:{self._u.id}"
 
     def get_public_name(self) -> str | None:
         first = self._u.first_name
@@ -53,6 +59,19 @@ class TelegramProviderData(BaseProviderData):
         if username:
             return f"https://t.me/{username}"
         return None
+
+    def is_valid(self) -> bool:
+        """Validate Telegram WebApp init data."""
+        init_data = self._telegram_data.init_data
+        vals = {k: unquote(v) for k, v in [s.split("=", 1) for s in init_data.split("&")]}
+        data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(vals.items()) if k != "hash")
+
+        secret_key = hmac.new("WebAppData".encode(), settings.system.tg_bot_token.encode(), hashlib.sha256).digest()
+        h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256)
+        return h.hexdigest() == vals["hash"]
+
+    def prepare_for_storage(self) -> Self:
+        return self
 
 
 DIAuthProviderData.register(AuthProviderType.TELEGRAM, TelegramProviderData)

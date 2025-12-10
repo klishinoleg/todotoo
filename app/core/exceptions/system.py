@@ -55,3 +55,16 @@ class AuthProviderException(BaseAppException):
 
     def __init__(self, message: str = SystemMessages.UNKNOW_AUTH_PROVIDER_ERROR):
         super().__init__(message)
+
+
+class AccessControlException(BaseAppException):
+    """
+    Represents an exception specifically related to access control violations.
+
+    This exception is used in scenarios where an operation cannot proceed
+    because of insufficient permissions or other access control constraints.
+    It provides a base for more specific access-control-related error handling.
+    """
+
+    def __init__(self, message: str = SystemMessages.UNKNOWN_ACCESS_CONTROL_ERROR):
+        super().__init__(message)

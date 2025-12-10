@@ -2,11 +2,12 @@ from core.enums.di.repository import RepositoryType
 from application.base.service.base_service import BaseService
 
 from domain.event.entities.event_occurrence_message import EventOccurrenceMessageEntity
-from domain.event.repositories.event_occurrence_message import EventOccurrenceMessageFilter
+from domain.event.repositories.event_occurrence_message import EventOccurrenceMessageFilter, \
+    EventOccurrenceMessageRepository
 
 
 class EventOccurrenceMessageService(
-    BaseService[EventOccurrenceMessageEntity, EventOccurrenceMessageFilter]
+    BaseService[EventOccurrenceMessageEntity, EventOccurrenceMessageFilter, EventOccurrenceMessageRepository]
 ):
     """
     Application-level service for working with EventOccurrenceMessageEntity.

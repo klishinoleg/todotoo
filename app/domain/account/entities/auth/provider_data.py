@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Self, Type
 
 
-class BaseProviderData(ABC):
+@dataclass(kw_only=True)
+class BaseAuthProviderData(ABC):
     """
     Domain-level interface for provider-specific identity data.
     Each provider data object knows how to extract unified account fields.
@@ -17,12 +19,21 @@ class BaseProviderData(ABC):
         return self._provider_raw_data
 
     @abstractmethod
+    def is_valid(self) -> bool:
+        """Check a signature or else validate the data is valid."""
+        ...
+
+    @abstractmethod
+    def prepare_for_storage(self) -> Self:
+        ...
+
+    @abstractmethod
     def get_user_id(self) -> str | int:
         """Unique ID from provider."""
         ...
 
     @abstractmethod
-    def get_username(self) -> str | None:
+    def get_username(self) -> str:
         ...
 
     @abstractmethod

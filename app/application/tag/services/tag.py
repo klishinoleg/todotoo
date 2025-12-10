@@ -5,7 +5,7 @@ from domain.tag.entities.tag import TagEntity
 from domain.tag.repositories.tag import TagRepository, TagFilter
 
 
-class TagService(BaseService[TagEntity, TagFilter]):
+class TagService(BaseService[TagEntity, TagFilter, TagRepository]):
     """
     Application-level service for working with TagEntity.
 

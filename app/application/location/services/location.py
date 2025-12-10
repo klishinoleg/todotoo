@@ -5,7 +5,7 @@ from domain.location.entities.location import LocationEntity
 from domain.location.repositories.location import LocationRepository, LocationFilter
 
 
-class LocationService(BaseService[LocationEntity, LocationFilter]):
+class LocationService(BaseService[LocationEntity, LocationFilter, LocationRepository]):
     """
     Application-level service for working with LocationEntity.
 

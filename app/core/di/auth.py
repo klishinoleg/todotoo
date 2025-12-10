@@ -2,13 +2,13 @@ from typing import Type, Dict
 
 from core.enums.app.account.auth_provider import AuthProviderType
 from core.exceptions.system import AuthProviderException
-from domain.account.entities.auth.provider_data import BaseProviderData
+from domain.account.entities.auth.provider_data import BaseAuthProviderData
 from core.messages.system.no_localized_messages import SystemMessages
 
 
 class DIAuthProviderData:
     """
-    DI container that maps AuthProviderType → BaseProviderData implementation.
+    DI container that maps AuthProviderType → BaseAuthProviderData implementation.
 
     The goal:
         - Hide provider-specific logic behind a unified interface
@@ -16,13 +16,13 @@ class DIAuthProviderData:
         - Guarantee clean domain-level provider_data for AccountAuthProfileEntity
     """
 
-    _provider_map: Dict[AuthProviderType | str, Type[BaseProviderData]] = {}
+    _provider_map: Dict[AuthProviderType | str, Type[BaseAuthProviderData]] = {}
 
     @classmethod
     def register(
             cls,
             provider_type: AuthProviderType | str,
-            provider_data_cls: Type[BaseProviderData]
+            provider_data_cls: Type[BaseAuthProviderData]
     ) -> None:
         """
         Register a mapping for provider data model.
@@ -34,7 +34,7 @@ class DIAuthProviderData:
             cls,
             provider_type: AuthProviderType | str,
             provider_raw_validated_data: dict
-    ) -> BaseProviderData:
+    ) -> BaseAuthProviderData:
         """
         Instantiate a proper ProviderData object for a given provider type.
         """

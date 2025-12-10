@@ -36,3 +36,4 @@ class TelegramInitData:
     auth_date: str
     hash: str | None
     signature: str | None
+    init_data: str

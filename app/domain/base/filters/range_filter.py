@@ -10,3 +10,4 @@ class RangeFilterField[T, Q](BaseFilterField[Q], ABC):
     from_value: T | None = None
     to_value: T | None = None
     equal: T | None = None
+    is_null: bool | None = None

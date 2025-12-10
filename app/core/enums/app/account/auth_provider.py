@@ -18,3 +18,16 @@ class AuthProviderType(BaseLabeledEnum):
             cls.PASSWORD: _("Password auth"),
             cls.FAKE: _("Fake auth"),
         }
+
+
+class AuthActionType(BaseLabeledEnum):
+    LOGIN = "login"
+    REGISTER = "register"
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _label_map(cls) -> Dict[str, str]:
+        return {
+            cls.LOGIN: _("Login"),
+            cls.REGISTER: _("Register"),
+        }

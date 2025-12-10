@@ -1,7 +1,7 @@
 from tortoise.queryset import QuerySet
 
 from core.di.repository import DIRepository
-from core.enums.di.repository import RepositoryType
+from core.enums.di.repository import RepositoryType, FilterFieldType
 from domain.base.filters.range_filter import RangeFilterField
 
 
@@ -23,7 +23,10 @@ class TortoiseRangeFilterField[T](RangeFilterField[T, QuerySet]):
         if self.to_value is not None:
             query = query.filter(**{f"{name}__lte": self.to_value})
 
+        if self.is_null is not None:
+            query = query.filter(**{f"{name}__isnull": self.is_null})
+
         return query
 
 
-DIRepository.register_filter(TortoiseRangeFilterField, RepositoryType.TORTOISE)
+DIRepository.register_filter(FilterFieldType.RANGE, TortoiseRangeFilterField, RepositoryType.TORTOISE)

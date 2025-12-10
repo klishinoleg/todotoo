@@ -37,3 +37,7 @@ class AccountSessionEntity(BaseEntity):
         return self.get_new_updated({
             "requests": self.requests + 1
         })
+
+    @classmethod
+    def create_from_account_id(cls, account_id: int) -> "AccountSessionEntity":
+        return cls(account_id=account_id)
