@@ -20,6 +20,10 @@ localize: ## makemessages -> translate -> makemessages
 	$(MAKE) translate LANGS="$(LANGS)" LOCALE="$(LOCALE)"
 	$(MAKE) i18n-makemessages LANGS="$(LANGS)" LOCALE="$(LOCALE)" SOURCE_LANG="$(SOURCE_LANG)"
 
+db:
+	aerich migrate
+	aerich upgrade
+
 help:
 	@echo "Usage:"
 	@echo "  make localize LANGS=ru,de LOCALE=locales"
