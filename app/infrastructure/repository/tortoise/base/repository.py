@@ -53,6 +53,10 @@ class BaseTortoiseRepository[T: BaseEntity, FD: BaseFilter[QuerySet], TM: BaseTo
         model = await self.model.get(id=entity.id)
         return await self.to_entity(model)
 
+    async def delete(self, entity_id: int) -> bool:
+        deleted_count = await self.model.filter(id=entity_id).delete()
+        return deleted_count > 0
+
     # ------------------------ FILTERS ------------------------
 
     async def filtered_list(self, filter_data: FD) -> list[T]:
@@ -64,8 +68,25 @@ class BaseTortoiseRepository[T: BaseEntity, FD: BaseFilter[QuerySet], TM: BaseTo
         """
         query = self.model.all()
         query = filter_data.extend_query(query)
+        query = self._apply_order_and_pagination(query, filter_data, with_pagination=True)
         models = await query
         return [await self.to_entity(m) for m in models]
+
+    async def filtered_count(self, filter_data: FD) -> int:
+        query = self.model.all()
+        query = filter_data.extend_query(query)
+        return await query.count()
+
+    @staticmethod
+    def _apply_order_and_pagination(query: QuerySet, filter_data: FD, with_pagination: bool) -> QuerySet:
+        if filter_data.order_data:
+            query = query.order_by(*filter_data.order_data)
+
+        if with_pagination and filter_data.page and filter_data.per_page:
+            offset = max((filter_data.page - 1) * filter_data.per_page, 0)
+            query = query.offset(offset).limit(filter_data.per_page)
+
+        return query
 
     # ------------------------ Mapping ------------------------
 

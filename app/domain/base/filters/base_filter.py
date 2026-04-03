@@ -44,11 +44,14 @@ class BaseFilter[Q](BaseModel, ABC):
     order_data: list[str] | None = None
     page: int | None = None
     per_page: int | None = None
+    _SYSTEM_FIELDS = {"order_data", "page", "per_page"}
 
     # Validate that all model fields are BaseFilterField subclasses
     @model_validator(mode="after")
     def validate_filter_fields(self) -> Self:
         for name, value in self.__dict__.items():
+            if name in self._SYSTEM_FIELDS:
+                continue
             if value is None:
                 # None fields are allowed (disabled filter)
                 continue
@@ -91,6 +94,8 @@ class BaseFilter[Q](BaseModel, ABC):
     def extend_query(self, query: Q) -> Q:
         """Apply all non-empty filter fields to query."""
         for name, value in self.__dict__.items():
+            if name in self._SYSTEM_FIELDS:
+                continue
             if value is None:
                 continue
 

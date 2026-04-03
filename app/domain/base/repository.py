@@ -93,6 +93,19 @@ class BaseRepository[T: BaseEntity, FD: BaseFilter](ABC):
         """
         ...
 
+    @abstractmethod
+    async def delete(self, entity_id: int) -> bool:
+        """
+        Delete entity by primary key.
+
+        Args:
+            entity_id: Primary key value.
+
+        Returns:
+            True if entity existed and was deleted, False otherwise.
+        """
+        ...
+
     # ---------------------------------------------------------
     # FILTERED LIST & PAGINATION
     # ---------------------------------------------------------
@@ -113,5 +126,15 @@ class BaseRepository[T: BaseEntity, FD: BaseFilter](ABC):
 
         Returns:
             List of entities after filtering, ordering and pagination.
+        """
+        ...
+
+    @abstractmethod
+    async def filtered_count(self, filter_data: FD) -> int:
+        """
+        Return total amount of entities matching filter (without pagination).
+
+        Args:
+            filter_data: Domain filter DTO.
         """
         ...

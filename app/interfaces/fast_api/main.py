@@ -14,7 +14,7 @@ from core.config.settings import settings
 from core.enums.di.storage import StorageType
 from core.i18n import activate as activate_language, reset as reset_language
 from core.init_services import init_services, shutdown_services
-from interfaces.fast_api.routers import auth_router
+from interfaces.fast_api.routers import auth_router, v1_router
 
 load_dotenv()
 from fastadmin import fastapi_app as admin_app
@@ -90,4 +90,5 @@ app.add_event_handler("startup", startup)
 app.add_event_handler("shutdown", shutdown)
 
 app.include_router(auth_router, prefix=settings.system.api_v1)
+app.include_router(v1_router, prefix=settings.system.api_v1)
 app.mount("/admin", admin_app, name="admin")

@@ -1,0 +1,338 @@
+# Russian translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-04-03 23:50+0300\n"
+"PO-Revision-Date: 2026-04-03 23:50+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ru <LL@li.org>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: core/enums/app/account/auth_provider.py:21
+msgid "Telegram auth"
+msgstr "Telegram авторизация"
+
+#: core/enums/app/account/auth_provider.py:22
+msgid "Telegram Web auth"
+msgstr "Веб-аутентификация Telegram"
+
+#: core/enums/app/account/auth_provider.py:23
+msgid "Password auth"
+msgstr "Авторизация по паролю"
+
+#: core/enums/app/account/auth_provider.py:24
+msgid "Google auth"
+msgstr "Google-авторизация"
+
+#: core/enums/app/account/auth_provider.py:25
+msgid "Apple auth"
+msgstr "Apple авторизация"
+
+#: core/enums/app/account/auth_provider.py:26
+msgid "Facebook auth"
+msgstr "Facebook-аутентификация"
+
+#: core/enums/app/account/auth_provider.py:27
+msgid "Fake auth"
+msgstr "Поддельная аутентификация"
+
+#: core/enums/app/account/auth_provider.py:39
+msgid "Login"
+msgstr "Авторизоваться"
+
+#: core/enums/app/account/auth_provider.py:40
+msgid "Register"
+msgstr "Зарегистрироваться"
+
+#: core/enums/app/account/gender.py:15
+msgid "Male"
+msgstr "Мужской"
+
+#: core/enums/app/account/gender.py:16
+msgid "Female"
+msgstr "Женский"
+
+#: core/enums/app/activity_log/idea_activity_type.py:23
+msgid "Idea created"
+msgstr "Идея создана"
+
+#: core/enums/app/activity_log/idea_activity_type.py:24
+msgid "Participant joined"
+msgstr "Участник присоединился"
+
+#: core/enums/app/activity_log/idea_activity_type.py:25
+msgid "Participant left"
+msgstr "Участник ушел"
+
+#: core/enums/app/activity_log/idea_activity_type.py:26
+msgid "Request created"
+msgstr "Запрос создан"
+
+#: core/enums/app/activity_log/idea_activity_type.py:27
+msgid "Request approved"
+msgstr "Запрос одобрен"
+
+#: core/enums/app/activity_log/idea_activity_type.py:28
+msgid "Role changed"
+msgstr "Роль изменена"
+
+#: core/enums/app/activity_log/idea_activity_type.py:29
+msgid "Plan created"
+msgstr "План создан"
+
+#: core/enums/app/activity_log/idea_activity_type.py:30
+msgid "Step completed"
+msgstr "Шаг завершен"
+
+#: core/enums/app/activity_log/idea_activity_type.py:31
+msgid "Meeting created"
+msgstr "Встреча создана"
+
+#: core/enums/app/activity_log/idea_activity_type.py:32
+msgid "Event created"
+msgstr "Событие создано"
+
+#: core/enums/app/calendar/calendar_item_type.py:15
+msgid "Meeting"
+msgstr "Встреча"
+
+#: core/enums/app/calendar/calendar_item_type.py:16
+msgid "Event"
+msgstr "Событие"
+
+#: core/enums/app/event/schedule_rule_type.py:16
+msgid "Weekly"
+msgstr "Еженедельно"
+
+#: core/enums/app/event/schedule_rule_type.py:17
+msgid "Monthly"
+msgstr "Ежемесячно"
+
+#: core/enums/app/event/schedule_rule_type.py:18
+msgid "Day"
+msgstr "День"
+
+#: core/enums/app/idea/status.py:18
+msgid "Draft"
+msgstr "Черновик"
+
+#: core/enums/app/idea/status.py:19
+#: core/enums/app/idea_participant/participant_status.py:17
+msgid "Active"
+msgstr "Активный"
+
+#: core/enums/app/idea/status.py:20
+msgid "On hold"
+msgstr "На удерживании"
+
+#: core/enums/app/idea/status.py:21
+msgid "Completed"
+msgstr "Завершенный"
+
+#: core/enums/app/idea/status.py:22
+msgid "Archived"
+msgstr "В архиве"
+
+#: core/enums/app/idea/visibility.py:16
+msgid "Public"
+msgstr "Общественный"
+
+#: core/enums/app/idea/visibility.py:17
+msgid "Private"
+msgstr "Частный"
+
+#: core/enums/app/idea/visibility.py:18
+msgid "Invite only"
+msgstr "Только по приглашению"
+
+#: core/enums/app/idea_event/event_participant_status.py:16
+msgid "Joined"
+msgstr "Присоединился"
+
+#: core/enums/app/idea_event/event_participant_status.py:17
+msgid "Left"
+msgstr "Левый"
+
+#: core/enums/app/idea_event/event_participant_status.py:18
+msgid "Removed"
+msgstr "Удаленный"
+
+#: core/enums/app/idea_event/media_type.py:15
+#: core/enums/app/motivation/motivator_type.py:17
+msgid "Image"
+msgstr "Изображение"
+
+#: core/enums/app/idea_event/media_type.py:16
+msgid "Video"
+msgstr "Видео"
+
+#: core/enums/app/idea_participant/idea_role.py:19
+msgid "Owner"
+msgstr "Владелец"
+
+#: core/enums/app/idea_participant/idea_role.py:20
+msgid "Admin"
+msgstr "Админ"
+
+#: core/enums/app/idea_participant/idea_role.py:21
+msgid "Moderator"
+msgstr "Модератор"
+
+#: core/enums/app/idea_participant/idea_role.py:22
+msgid "Core member"
+msgstr "Основной член"
+
+#: core/enums/app/idea_participant/idea_role.py:23
+msgid "Contributor"
+msgstr "Автор"
+
+#: core/enums/app/idea_participant/idea_role.py:24
+msgid "Viewer"
+msgstr "Зритель"
+
+#: core/enums/app/idea_participant/participant_status.py:18
+#: core/enums/app/idea_participant/request_status.py:16
+msgid "Pending"
+msgstr "В ожидании"
+
+#: core/enums/app/idea_participant/participant_status.py:19
+#: core/enums/app/meeting/meeting_participant_status.py:17
+msgid "Declined"
+msgstr "Отклоненный"
+
+#: core/enums/app/idea_participant/participant_status.py:20
+msgid "Blocked"
+msgstr "Заблокировано"
+
+#: core/enums/app/idea_participant/request_status.py:17
+msgid "Approved"
+msgstr "Одобренный"
+
+#: core/enums/app/idea_participant/request_status.py:18
+msgid "Rejected"
+msgstr "Отклоненный"
+
+#: core/enums/app/location/geometry_type.py:17
+#: core/enums/app/location/location_type.py:18
+msgid "Point"
+msgstr "Точка"
+
+#: core/enums/app/location/geometry_type.py:18
+msgid "Circle"
+msgstr "Круг"
+
+#: core/enums/app/location/geometry_type.py:19
+msgid "Polygon"
+msgstr "Полигон"
+
+#: core/enums/app/location/location_type.py:19
+msgid "Area"
+msgstr "Область"
+
+#: core/enums/app/location/location_type.py:20
+msgid "Place"
+msgstr "Место"
+
+#: core/enums/app/location/location_type.py:21
+msgid "Organization"
+msgstr "Организация"
+
+#: core/enums/app/meeting/meeting_participant_status.py:16
+msgid "Going"
+msgstr "Идущий"
+
+#: core/enums/app/meeting/meeting_participant_status.py:18
+msgid "Maybe"
+msgstr "Может быть"
+
+#: core/enums/app/meeting/meeting_type.py:16
+msgid "Online"
+msgstr "Онлайн"
+
+#: core/enums/app/meeting/meeting_type.py:17
+msgid "Offline"
+msgstr "Оффлайн"
+
+#: core/enums/app/meeting/meeting_type.py:18
+msgid "Hybrid"
+msgstr "Гибридный"
+
+#: core/enums/app/motivation/motivator_type.py:18
+msgid "YouTube"
+msgstr "Ютуб"
+
+#: core/enums/app/motivation/motivator_type.py:19
+msgid "Article"
+msgstr "Статья"
+
+#: core/enums/app/motivation/motivator_type.py:20
+msgid "Text"
+msgstr "Текст"
+
+#: core/enums/app/plan/plan_step_status.py:17
+msgid "Todo"
+msgstr "Все"
+
+#: core/enums/app/plan/plan_step_status.py:18
+msgid "In progress"
+msgstr "В ходе выполнения"
+
+#: core/enums/app/plan/plan_step_status.py:19
+msgid "Done"
+msgstr "Сделанный"
+
+#: core/enums/app/plan/plan_step_status.py:20
+msgid "Skipped"
+msgstr "Пропущено"
+
+#: core/messages/account/access_control.py:8
+#, python-brace-format
+msgid "Invalid auth provider data for provider: {}"
+msgstr "Неверные данные аутентификации для провайдера: {}"
+
+#: core/messages/account/access_control.py:12
+msgid "Account auth profile not found"
+msgstr "Профиль аутентификации аккаунта не найден"
+
+#: core/messages/account/access_control.py:16
+msgid "Invalid token"
+msgstr "Неверный токен"
+
+#: core/messages/account/access_control.py:20
+msgid "Token expired"
+msgstr "Срок действия токена истек"
+
+#: core/messages/account/access_control.py:24
+msgid "No credentials provided"
+msgstr "Учетные данные не предоставлены"
+
+#: core/messages/account/access_control.py:28
+#, python-brace-format
+msgid "Account not found {}"
+msgstr "Аккаунт не найден {}"
+
+#: core/messages/account/access_control.py:32
+msgid "Invalid Telegram hash"
+msgstr "Неверный хеш Telegram"
+
+#: core/messages/account/access_control.py:36
+msgid "Telegram auth expired"
+msgstr "Срок действия авторизации Telegram истек."
+
+#: core/messages/account/access_control.py:40
+msgid "Password profile not found"
+msgstr "Профиль пароля не найден"
+
+#: core/messages/account/access_control.py:44
+msgid "Invalid username or password"
+msgstr "Неверное имя пользователя или пароль"

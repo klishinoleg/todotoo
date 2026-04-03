@@ -53,9 +53,15 @@ class BaseService[T: BaseEntity, FD: BaseFilter, BR: BaseRepository](ABC):
     async def bulk_create(self, entities: list[T]) -> list[T]:
         return await self.repository.bulk_create(entities)
 
+    async def delete(self, entity_id: int) -> bool:
+        return await self.repository.delete(entity_id)
+
     # ---------------------------------------------------------
     # Filter + list passthrough
     # ---------------------------------------------------------
 
     async def filtered_list(self, filter_data: FD) -> list[T]:
         return await self.repository.filtered_list(filter_data)
+
+    async def filtered_count(self, filter_data: FD) -> int:
+        return await self.repository.filtered_count(filter_data)
