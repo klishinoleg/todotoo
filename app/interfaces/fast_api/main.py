@@ -5,7 +5,6 @@ import logging
 import sys
 from pathlib import Path
 
-import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -76,6 +75,3 @@ app.add_event_handler("shutdown", shutdown)
 
 app.include_router(auth_router, prefix=settings.system.api_v1)
 app.mount("/admin", admin_app, name="admin")
-
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)

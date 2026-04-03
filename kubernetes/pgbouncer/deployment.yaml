@@ -19,9 +19,11 @@ spec:
             - containerPort: 6432
           volumeMounts:
             - name: config
-              mountPath: /etc/pgbouncer
+              mountPath: /etc/pgbouncer/pgbouncer.ini
+              subPath: pgbouncer.ini
             - name: users
-              mountPath: /etc/pgbouncer/users
+              mountPath: /etc/pgbouncer/users.txt
+              subPath: users.txt
       volumes:
         - name: config
           configMap:
@@ -31,6 +33,7 @@ spec:
                 path: pgbouncer.ini
         - name: users
           secret:
+            secretName: pgbouncer-users
             items:
               - key: users.txt
                 path: users.txt

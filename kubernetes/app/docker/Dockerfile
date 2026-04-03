@@ -14,4 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./app ./app
 
-CMD ["sleep", "3600"]
+CMD ["python", "app/interfaces/fast_api/pod_run.py"]

@@ -29,9 +29,9 @@ class RegistrationLoginProviderDataDTO(BaseModel):
 
 class AuthRequestSignUpDTO(AuthRequestDTO[RegistrationSignupProviderDataDTO]):
     provider_type: AuthProviderType = Field(default=AuthProviderType.PASSWORD)
-    action_type = AuthActionType.REGISTER
+    action_type: AuthActionType = Field(default=AuthActionType.REGISTER)
 
 
 class AuthRequestLoginDTO(AuthRequestDTO[RegistrationLoginProviderDataDTO]):
     provider_type: AuthProviderType = Field(default=AuthProviderType.PASSWORD)
-    action_type = AuthActionType.LOGIN
+    action_type: AuthActionType = Field(default=AuthActionType.LOGIN)
