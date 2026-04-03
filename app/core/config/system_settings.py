@@ -57,8 +57,12 @@ class SystemSettings(BaseSettings):
         return path
 
     def get_locales_dir(self) -> Path:
-        path = Path(__file__).parent.parent / self.locales_dir
-        path.mkdir(exist_ok=True)
+        configured_path = Path(self.locales_dir)
+        if configured_path.is_absolute():
+            path = configured_path
+        else:
+            path = Path(__file__).parents[2] / configured_path
+        path.mkdir(parents=True, exist_ok=True)
         return path
 
     model_config = SettingsConfigDict(

@@ -6,12 +6,13 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from core.config.settings import settings
 from core.enums.di.storage import StorageType
+from core.i18n import activate as activate_language, reset as reset_language
 from core.init_services import init_services, shutdown_services
 from interfaces.fast_api.routers import auth_router
 
@@ -34,6 +35,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def localization_middleware(request: Request, call_next):
+    language = activate_language(
+        language=request.query_params.get("lang"),
+        accept_language=request.headers.get("Accept-Language"),
+    )
+    request.state.language = language
+    try:
+        response = await call_next(request)
+    finally:
+        reset_language()
+    response.headers["Content-Language"] = request.state.language
+    return response
 
 
 LOCAL_FILES_ROUTE = f"/{settings.storage.local_base_url.strip('/')}" + "/{file_path:path}"
