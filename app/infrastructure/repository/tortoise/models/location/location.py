@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Awaitable
+from typing import TYPE_CHECKING
 
 from postgis import Polygon, Point
 from tortoise import fields
-from tortoise_imagefield import ImageField
 
 from core.config.settings import settings
 from core.enums.app.location.location_type import LocationType
@@ -74,7 +73,7 @@ class LocationModel(BaseTortoiseModel):
         description="Parent location for hierarchical structure.",
     )
 
-    image = ImageField(directory_name="locations", field_for_name="name")
+    image = fields.CharField(max_length=1024, null=True)
 
     # ---------------------------
     # Mixins: TimestampMixin + WithActiveMixin
@@ -93,8 +92,6 @@ class LocationModel(BaseTortoiseModel):
     )
 
     if TYPE_CHECKING:
-        get_image_url: Callable[[], str]
-        get_image_webp: Callable[[int, int, str, bool | None], Awaitable[str]]
         parent_id: int | None
 
     class Meta:

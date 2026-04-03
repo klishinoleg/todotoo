@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Awaitable, Callable
+from typing import TYPE_CHECKING
 
 from postgis import Point, Polygon
 from tortoise import fields
-from tortoise_imagefield import ImageField
 
 from core.config.settings import settings
 from infrastructure.repository.tortoise.base.fields.point import PostGISPointField
@@ -84,10 +83,7 @@ class EventModel(BaseTortoiseModel):
         description="Chat link (e.g. Telegram).",
     )
 
-    image = ImageField(
-        directory_name="events",
-        field_for_name="name",
-    )
+    image = fields.CharField(max_length=1024, null=True)
 
     # ---------------------------
     # Schedule relations / data
@@ -114,9 +110,6 @@ class EventModel(BaseTortoiseModel):
     if TYPE_CHECKING:
         account_id: int
         location_id: int | None
-        get_image_url: Callable[[], str]
-        get_image_webp: Callable[[int, int, str, bool | None], Awaitable[str]]
-
     class Meta:
         table = "events"
         description = "User events"

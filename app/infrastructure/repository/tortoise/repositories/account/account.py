@@ -2,9 +2,9 @@ from typing import Type
 
 from tortoise.queryset import QuerySet
 
-from core.config.settings import settings
 from core.di.repository import DIRepository
 from core.enums.di.repository import RepositoryType
+from core.storage import get_storage
 from domain.account.entities.account import AccountEntity
 from domain.account.repositories.account import AccountRepository, AccountFilter
 from infrastructure.repository.tortoise.base.repository import BaseTortoiseRepository
@@ -27,6 +27,8 @@ class AccountTortoiseRepository(
     # Mapping: Model → Entity
     # ---------------------------------------
     async def to_entity(self, model: AccountModel) -> AccountEntity:
+        storage = get_storage()
+        avatar = storage.get_url(model.avatar)
         return AccountEntity(
             id=model.id,
             username=model.username,
@@ -34,10 +36,10 @@ class AccountTortoiseRepository(
             email=model.email,
             language=model.language,
             is_online=model.is_online,
-            avatar=model.avatar,
-            avatar_small=await model.get_avatar_webp(*settings.frontend.image_size_avatar_small),
-            avatar_medium=await model.get_avatar_webp(*settings.frontend.image_size_avatar_medium),
-            avatar_large=await model.get_avatar_webp(*settings.frontend.image_size_avatar_large),
+            avatar=avatar,
+            avatar_small=avatar,
+            avatar_medium=avatar,
+            avatar_large=avatar,
             is_active=model.is_active,
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -47,6 +49,7 @@ class AccountTortoiseRepository(
     # Mapping: Entity → Model for DB insert/update
     # ---------------------------------------
     def from_entity(self, entity: AccountEntity) -> AccountModel:
+        storage = get_storage()
         return self.model(
             id=entity.id,
             username=entity.username,
@@ -54,7 +57,7 @@ class AccountTortoiseRepository(
             email=entity.email,
             language=entity.language,
             is_online=entity.is_online,
-            avatar=entity.avatar,
+            avatar=storage.to_key(entity.avatar),
             is_active=entity.is_active,
             created_at=entity.created_at,
             updated_at=entity.updated_at,

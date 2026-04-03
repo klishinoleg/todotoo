@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .db_settings import DBSettings
 from .frontend_settings import FrontendSettings
+from .storage_settings import StorageSettings
 from .system_settings import SystemSettings
 
 class Settings(BaseSettings):
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
     system: SystemSettings = SystemSettings()
     db: DBSettings = DBSettings()
     frontend: FrontendSettings = FrontendSettings()
+    storage: StorageSettings = StorageSettings()
     admin_user_model: str = "AccountModel"
     admin_user_model_username_field: str = "username"
 

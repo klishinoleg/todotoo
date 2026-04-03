@@ -33,6 +33,11 @@ class SystemSettings(BaseSettings):
     access_token_expire_minutes: int = 60
     geo_srid: int = 4326
 
+    def get_allowed_origins(self) -> list[str]:
+        if self.allowed_origins.strip() == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+
     def get_languages(self) -> tuple[tuple[str, str], ...]:
         return tuple(lang for lang in (
             ("en", "English"),

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minis3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minis3
+  template:
+    metadata:
+      labels:
+        app: minis3
+    spec:
+      containers:
+        - name: minis3
+          image: minio/minio:RELEASE.2026-03-26T22-08-17Z
+          args:
+            - server
+            - /data
+            - --console-address
+            - :9001
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-env
+                  key: STORAGE_MINIS3_ACCESS_KEY
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-env
+                  key: STORAGE_MINIS3_SECRET_KEY
+          ports:
+            - containerPort: 9000
+              name: s3
+            - containerPort: 9001
+              name: console
+          volumeMounts:
+            - name: minis3-data
+              mountPath: /data
+      volumes:
+        - name: minis3-data
+          persistentVolumeClaim:
+            claimName: minis3-pvc
+

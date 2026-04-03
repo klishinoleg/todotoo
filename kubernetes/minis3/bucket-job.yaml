@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minis3-init-bucket
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: minis3-init-bucket
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: minio/mc:RELEASE.2026-03-26T22-17-33Z
+          envFrom:
+            - secretRef:
+                name: app-env
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              until mc alias set minis3 http://minis3:9000 "$STORAGE_MINIS3_ACCESS_KEY" "$STORAGE_MINIS3_SECRET_KEY"; do
+                echo "Waiting for minis3..."
+                sleep 2
+              done
+              mc mb --ignore-existing minis3/"$STORAGE_MINIS3_BUCKET"
+

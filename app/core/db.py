@@ -1,6 +1,5 @@
 from asyncpg import InternalServerError
 from tortoise import Tortoise, connections, BaseDBAsyncClient, ConfigurationError
-from tortoise_imagefield import ImageField
 
 from core.config.settings import settings
 
@@ -75,21 +74,6 @@ TORTOISE_ORM_DIRECT = {
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
-async def init_image_fields() -> None:
-    """
-    Initializes ImageField dialect bindings for all Tortoise models.
-    """
-    models = Tortoise.apps.get("models")
-
-    if models is None:
-        return
-
-    for model in models.values():
-        for field_name, field in model._meta.fields_map.items():
-            if isinstance(field, ImageField):
-                field.get_for_dialect("default", field_name)
-
-
 async def ensure_db_functions() -> None:
     """
     Ensures required PostgreSQL SQL functions exist.
@@ -111,7 +95,6 @@ async def init_tortoise(with_schema: bool = False) -> None:
     Initialize Tortoise ORM and load all model modules.
     """
     await Tortoise.init(config=TORTOISE_ORM)
-    await init_image_fields()
     await ensure_db_functions()
 
     if with_schema:

@@ -4,9 +4,9 @@ from typing import Type
 
 from tortoise.queryset import QuerySet
 
-from core.config.settings import settings
 from core.di.repository import DIRepository
 from core.enums.di.repository import RepositoryType
+from core.storage import get_storage
 from domain.location.entities.location import LocationEntity
 from domain.location.repositories.location import LocationFilter, LocationRepository
 from infrastructure.repository.tortoise.base.geo.convert import (
@@ -36,6 +36,8 @@ class LocationTortoiseRepository(
     # Mapping: Model → Entity
     # ---------------------------------------
     async def to_entity(self, model: LocationModel) -> LocationEntity:
+        storage = get_storage()
+        image = storage.get_url(model.image)
         return LocationEntity(
             id=model.id,
             name=model.name,
@@ -45,10 +47,10 @@ class LocationTortoiseRepository(
             address_raw=model.address_raw,
             address_structured=model.address_structured,
             parent_id=model.parent_id,
-            image=model.image,
-            image_small=await model.get_image_webp(*settings.frontend.image_size_location_small),
-            image_medium=await model.get_image_webp(*settings.frontend.image_size_location_medium),
-            image_large=await model.get_image_webp(*settings.frontend.image_size_location_large),
+            image=image,
+            image_small=image,
+            image_medium=image,
+            image_large=image,
             is_active=model.is_active,
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -58,6 +60,7 @@ class LocationTortoiseRepository(
     # Mapping: Entity → Model for DB insert/update
     # ---------------------------------------
     def from_entity(self, entity: LocationEntity) -> LocationModel:
+        storage = get_storage()
         return self.model(
             id=entity.id,
             name=entity.name,
@@ -67,7 +70,7 @@ class LocationTortoiseRepository(
             address_raw=entity.address_raw,
             address_structured=entity.address_structured,
             parent_id=entity.parent_id,
-            image=entity.image,
+            image=storage.to_key(entity.image),
             is_active=entity.is_active,
             created_at=entity.created_at,
             updated_at=entity.updated_at,

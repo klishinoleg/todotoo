@@ -40,11 +40,17 @@ pgbconf: pgbhash ## generate config files for pg bouncer
 apply-prod: env pgbconf ## Apply all resources (namespace + postgres + app) PROD
 	kubectl apply -f namespace.yaml
 	kubectl apply -n $(NAMESPACE) -f postgres/
+	kubectl apply -n $(NAMESPACE) -f minis3/pvc.yaml
+	kubectl apply -n $(NAMESPACE) -f minis3/deployment.yaml
+	kubectl apply -n $(NAMESPACE) -f minis3/service.yaml
+	kubectl delete -n $(NAMESPACE) job minis3-init-bucket --ignore-not-found
+	kubectl apply -n $(NAMESPACE) -f minis3/bucket-job.yaml
 	kubectl apply -n $(NAMESPACE) -f pgbouncer/
 	kubectl apply -n $(NAMESPACE) -f app/
 
 delete: ## Delete all resources including namespace
 	kubectl delete -n $(NAMESPACE) -f app/
+	kubectl delete -n $(NAMESPACE) -f minis3/
 	kubectl delete -n $(NAMESPACE) -f postgres/
 	kubectl delete -f namespace.yaml
 
@@ -70,6 +76,9 @@ logs-db: ## Show logs for Postgres
 
 logs-dbb: ## Show logs for PG Bouncer
 	kubectl logs -n $(NAMESPACE) deployment/pgbouncer
+
+logs-minis3: ## Show logs for MiniS3
+	kubectl logs -n $(NAMESPACE) deployment/minis3
 
 connect-db: ## Port-forward Postgres to localhost:5040
 	kubectl port-forward -n $(NAMESPACE) service/postgres 30001:5432

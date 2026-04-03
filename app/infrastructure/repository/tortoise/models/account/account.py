@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Awaitable
-
 from tortoise import fields
-from tortoise_imagefield import ImageField
 
 from infrastructure.repository.tortoise.base.model import BaseTortoiseModel
 
@@ -22,16 +19,12 @@ class AccountModel(BaseTortoiseModel):
 
     is_online = fields.BooleanField(default=False)
 
-    avatar = ImageField(directory_name="avatars", field_for_name="username")
+    avatar = fields.CharField(max_length=1024, null=True)
 
     # Mixins
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
     is_active = fields.BooleanField(default=True)
-
-    if TYPE_CHECKING:
-        get_avatar_url: Callable[[], str]
-        get_avatar_webp: Callable[[int, int, str, bool | None], Awaitable[str]]
 
     class Meta:
         table = "accounts"

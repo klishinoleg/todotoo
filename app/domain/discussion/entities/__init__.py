@@ -1,0 +1,4 @@
+from .discussion import DiscussionEntity
+from .discussion_attachment import DiscussionAttachmentEntity
+from .discussion_message import DiscussionMessageEntity
+

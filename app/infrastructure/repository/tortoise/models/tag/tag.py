@@ -1,7 +1,6 @@
-from typing import TYPE_CHECKING, Callable, Awaitable
+from typing import TYPE_CHECKING
 
 from tortoise import fields
-from tortoise_imagefield import ImageField
 
 from infrastructure.repository.tortoise.base.model import BaseTortoiseModel
 
@@ -44,12 +43,10 @@ class TagModel(BaseTortoiseModel):
     )
 
     # Icons
-    icon = ImageField(directory_name="tag_icons", field_for_name="slug", null=True)
+    icon = fields.CharField(max_length=1024, null=True)
 
     if TYPE_CHECKING:
         parent_id: int | None
-        get_icon_url: Callable[[], str]
-        get_icon_webp: Callable[[int, int, str, bool | None], Awaitable[str]]
 
     class Meta:
         table = "tags"
