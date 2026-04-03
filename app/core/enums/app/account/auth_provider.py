@@ -7,7 +7,11 @@ from core.i18n import _
 
 class AuthProviderType(BaseLabeledEnum):
     TELEGRAM = "telegram"
+    TELEGRAM_WEB = "telegram_web"
     PASSWORD = "password"
+    GOOGLE = "google"
+    APPLE = "apple"
+    FACEBOOK = "facebook"
     FAKE = "fake"
 
     @classmethod
@@ -15,7 +19,11 @@ class AuthProviderType(BaseLabeledEnum):
     def _label_map(cls) -> Dict[str, str]:
         return {
             cls.TELEGRAM: _("Telegram auth"),
+            cls.TELEGRAM_WEB: _("Telegram Web auth"),
             cls.PASSWORD: _("Password auth"),
+            cls.GOOGLE: _("Google auth"),
+            cls.APPLE: _("Apple auth"),
+            cls.FACEBOOK: _("Facebook auth"),
             cls.FAKE: _("Fake auth"),
         }
 

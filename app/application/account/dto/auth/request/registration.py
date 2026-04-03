@@ -11,6 +11,7 @@ class RegistrationSignupProviderDataDTO(BaseModel):
     """DTO for registration (sign up)."""
     email: str
     password: str
+    confirm_password: str
     public_name: str | None = None
     language_code: str | None = None
     ip: str | None = None

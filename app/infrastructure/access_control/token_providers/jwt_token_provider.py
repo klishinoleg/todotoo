@@ -16,11 +16,11 @@ class JwtTokenProvider(TokenProvider):
     ALGORITHM = ALGORITHMS.HS256
 
     def __init__(self) -> None:
-        self.secret_key = settings.system.access_token_secret_key
+        self.secret_key = settings.auth.access_token_secret_key
 
     def create_token(self, user_id: int, expire_minutes: int | None = None) -> str:
         if not expire_minutes:
-            expire_minutes = settings.system.access_token_expire_minutes
+            expire_minutes = settings.auth.access_token_expire_minutes
         expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
         payload = {
             "sub": str(user_id),

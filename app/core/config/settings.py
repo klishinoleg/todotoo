@@ -2,6 +2,7 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .auth_settings import AuthSettings
 from .db_settings import DBSettings
 from .frontend_settings import FrontendSettings
 from .storage_settings import StorageSettings
@@ -11,6 +12,7 @@ class Settings(BaseSettings):
     """Main application settings combining domain-specific configs."""
 
     system: SystemSettings = SystemSettings()
+    auth: AuthSettings = AuthSettings()
     db: DBSettings = DBSettings()
     frontend: FrontendSettings = FrontendSettings()
     storage: StorageSettings = StorageSettings()

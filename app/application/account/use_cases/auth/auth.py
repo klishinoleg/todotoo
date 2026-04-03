@@ -1,12 +1,13 @@
 from application.account.dto.account import AccountDTO
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
+from application.account.dto.auth.request.oauth import AuthRequestOAuthLoginDTO, AuthRequestOAuthSignUpDTO
 from application.account.dto.auth.request.registration import AuthRequestSignUpDTO, AuthRequestLoginDTO
 from application.account.dto.auth.request.telegram import AuthRequestTelegramDTO
 from application.account.dto.auth.response import AuthResponseDTO
 from application.account.services.account import AccountService
 from application.account.services.account_auth_profile import AccountAuthProfileService
 from application.account.services.account_session import AccountSessionService
-from core.di.access_control import DIAccessTokenProvider
+from core.di.access_control import DIAccessTokenProvider, DIPasswordHasherProvider
 from core.di.auth import DIAuthProviderData
 from core.di.repository import DIRepositoryTransaction
 from core.enums.app.account.auth_provider import AuthProviderType
@@ -122,7 +123,7 @@ class AuthUseCase:
         assert account is not None
         return self._get_response_dto(account, auth_profile)
 
-    async def register(self, dto: AuthRequestSignUpDTO) -> AuthResponseDTO:
+    async def register(self, dto: AuthRequestSignUpDTO | AuthRequestOAuthSignUpDTO) -> AuthResponseDTO:
         """
         Register a new account using an external auth provider.
 
@@ -140,7 +141,7 @@ class AuthUseCase:
         account, auth_profile = await self._create_account_with_auth_profile(dto.provider_type, provider_data)
         return self._get_response_dto(account, auth_profile)
 
-    async def login(self, dto: AuthRequestLoginDTO) -> AuthResponseDTO:
+    async def login(self, dto: AuthRequestLoginDTO | AuthRequestOAuthLoginDTO) -> AuthResponseDTO:
         """
         Log in an existing user using an external auth provider.
 
@@ -164,6 +165,14 @@ class AuthUseCase:
         provider_data = DIAuthProviderData.get(dto.provider_type, dto.provider_data.model_dump())
         auth_profile = await self.account_auth_profile_service.get_or_raise_by_provider_and_id(dto.provider_type,
                                                                                                provider_data)
+        if dto.provider_type == AuthProviderType.PASSWORD:
+            password = str(getattr(dto.provider_data, "password", ""))
+            stored_hash = auth_profile.provider_data.serialize().get("password_hash")
+            if not stored_hash or not DIPasswordHasherProvider.get().verify(password, str(stored_hash)):
+                raise DomainValidationException(
+                    message=AccessControlMessages.invalid_username_or_password(),
+                    field=ErrorFields.AUTH_PROVIDER_DATA,
+                )
         account = await self.account_service.get(auth_profile.account_id)
         assert account is not None
         return self._get_response_dto(account, auth_profile)

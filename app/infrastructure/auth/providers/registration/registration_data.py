@@ -43,6 +43,10 @@ class RegistrationProviderData(BaseAuthProviderData):
         return f"mailto:{self._data.email}"
 
     def is_valid(self) -> bool:
+        if not self._data.password:
+            return False
+        if self._data.confirm_password is None:
+            return True
         return self._data.password == self._data.confirm_password
 
     def prepare_for_storage(self) -> Self:
@@ -55,5 +59,4 @@ class RegistrationProviderData(BaseAuthProviderData):
             return replace(self, _data=_data, _provider_raw_data=asdict(_data))
         return self
 
-
-DIAuthProviderData.register(AuthProviderType.TELEGRAM, RegistrationProviderData)
+DIAuthProviderData.register(AuthProviderType.PASSWORD, RegistrationProviderData)

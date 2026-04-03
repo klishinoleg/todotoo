@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from application.account.dto.account import AccountDTO
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
+from application.account.dto.auth.request.oauth import AuthRequestOAuthLoginDTO, AuthRequestOAuthSignUpDTO
 from application.account.dto.auth.response import AuthResponseDTO
 from domain.account.entities.account import AccountEntity
 from interfaces.fast_api.deps.account import get_current_account
@@ -33,6 +34,16 @@ async def signup(data: AuthRequestSignUpDTO) -> AuthResponseDTO:
     return await AuthUseCase().register(data)
 
 
+@router.post("/oauth/signup/", response_model=AuthResponseDTO)
+async def oauth_signup(data: AuthRequestOAuthSignUpDTO) -> AuthResponseDTO:
+    return await AuthUseCase().register(data)
+
+
 @router.post("/login/", response_model=AuthResponseDTO)
 async def login(data: AuthRequestLoginDTO) -> AuthResponseDTO:
+    return await AuthUseCase().login(data)
+
+
+@router.post("/oauth/login/", response_model=AuthResponseDTO)
+async def oauth_login(data: AuthRequestOAuthLoginDTO) -> AuthResponseDTO:
     return await AuthUseCase().login(data)

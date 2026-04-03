@@ -4,7 +4,6 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from core.enums.dev.enviroment_types import EnviromentTypes
-from core.enums.di.access_control import AccessTokenType, PasswordHasherType
 from core.enums.di.repository import RepositoryType
 
 
@@ -23,14 +22,9 @@ class SystemSettings(BaseSettings):
     api_v1: str = "/api/v1"
     ws_v1: str = "/ws/v1"
     server_url: str = ""
-    tg_bot_token: str = ""
     languages: str = "en|ru"
     default_timezone: str = "Europe/Belgrade"
     default_repository_type: RepositoryType = RepositoryType.TORTOISE
-    default_access_token_type: AccessTokenType = AccessTokenType.JWT
-    default_password_hasher_type: PasswordHasherType = PasswordHasherType.BCRYPT
-    access_token_secret_key: str = ""
-    access_token_expire_minutes: int = 60
     geo_srid: int = 4326
 
     def get_allowed_origins(self) -> list[str]:
