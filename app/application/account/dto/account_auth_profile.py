@@ -10,12 +10,11 @@ class AccountAuthProfileDTO(ItemDTO):
     Mirrors detailed entity fields suitable for UI and integrations.
     """
     account_id: int
-    provider: AuthProviderType
-    provider_account_id: str
-    is_active: bool
+    provider_type: AuthProviderType
+    provider_id: str
+    language_code: str | None
     created_at: datetime
     updated_at: datetime | None
-    last_login_at: datetime | None
 
 
 class AccountAuthProfileListDTO(ListDTO):
@@ -23,5 +22,5 @@ class AccountAuthProfileListDTO(ListDTO):
     Lightweight version of AccountAuthProfileDTO for list views.
     Only fields required by listings are included.
     """
-    provider: AuthProviderType
-    is_active: bool
+    provider_type: AuthProviderType
+    provider_id: str
