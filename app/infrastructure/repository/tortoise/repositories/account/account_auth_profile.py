@@ -57,16 +57,18 @@ class AccountAuthProfileTortoiseRepository(
     # Mapping: Entity → Model data for DB
     # ---------------------------------------
     def from_entity(self, entity: AccountAuthProfileEntity) -> AccountAuthProfileModel:
-        return self.model(
-            id=entity.id,
-            account_id=entity.account_id,
-            provider_type=entity.provider_type,
-            provider_id=entity.provider_id,
-            provider_data=entity.provider_data.serialize(),
-            language_code=entity.language_code,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-        )
+        payload: dict[str, object] = {
+            "account_id": entity.account_id,
+            "provider_type": entity.provider_type,
+            "provider_id": entity.provider_id,
+            "provider_data": entity.provider_data.serialize(),
+            "language_code": entity.language_code,
+            "created_at": entity.created_at,
+            "updated_at": entity.updated_at,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register in DI

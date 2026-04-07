@@ -63,22 +63,24 @@ class EventTortoiseRepository(
     # ---------------------------------------
     def from_entity(self, entity: EventEntity) -> EventModel:
         storage = get_storage()
-        return self.model(
-            id=entity.id,
-            name=entity.name,
-            description=entity.description,
-            account_id=entity.account_id,
-            point=to_postgis_point(entity.point),
-            polygon=to_postgis_polygon(entity.polygon),
-            group_link=entity.group_link,
-            image=storage.to_key(entity.image),
-            chat_link=entity.chat_link,
-            schedule_rules=entity.schedule_rule_ids,
-            location_id=entity.location_id,
-            is_active=entity.is_active,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-        )
+        payload: dict[str, object] = {
+            "name": entity.name,
+            "description": entity.description,
+            "account_id": entity.account_id,
+            "point": to_postgis_point(entity.point),
+            "polygon": to_postgis_polygon(entity.polygon),
+            "group_link": entity.group_link,
+            "image": storage.to_key(entity.image),
+            "chat_link": entity.chat_link,
+            "schedule_rules": entity.schedule_rule_ids,
+            "location_id": entity.location_id,
+            "is_active": entity.is_active,
+            "created_at": entity.created_at,
+            "updated_at": entity.updated_at,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register repository implementation in DI

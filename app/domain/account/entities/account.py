@@ -59,8 +59,12 @@ class AccountEntity(BaseEntity, TimestampMixin, WithActiveMixin):
 
     @classmethod
     async def create_from_auth_provider_data(cls, auth_provider_data: BaseAuthProviderData) -> "AccountEntity":
+        username = (auth_provider_data.get_username() or "").strip()
+        if not username:
+            provider_user_id = str(auth_provider_data.get_user_id() or "").strip()
+            username = f"oauth:{provider_user_id}" if provider_user_id else "oauth:user"
         return cls(
-            username=auth_provider_data.get_username(),
+            username=username,
             language=auth_provider_data.get_language_code() or settings.system.default_language,
             public_name=auth_provider_data.get_public_name(),
             avatar=await auth_provider_data.get_image_url()

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any
+from enum import Enum
+from typing import Any, Protocol, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from starlette.requests import Request
 
 from application.base.dto.crud import CrudDeleteResponseDTO, CrudListResponseDTO, CrudPayloadDTO
-from application.base.use_case.crud import BaseCrudUseCase, CrudEntityNotFound
+from application.base.use_case.crud import CrudEntityNotFound
 from core.exceptions.system import RepositoryException
 from domain.account.entities.account import AccountEntity
 from domain.base.exceptions import DomainValidationException
@@ -16,10 +17,27 @@ from interfaces.fast_api.deps.account import get_current_account
 from interfaces.fast_api.routers.v1.base.filter import ReactAdminFilter
 
 
-class V1CrudRouter[UC: BaseCrudUseCase](ABC):
+class CrudRouterUseCaseProtocol(Protocol):
+    async def list(self, filter_payload: dict[str, Any]) -> CrudListResponseDTO:
+        ...
+
+    async def get(self, entity_id: int) -> dict[str, Any]:
+        ...
+
+    async def create(self, payload: dict[str, Any]) -> dict[str, Any]:
+        ...
+
+    async def update(self, entity_id: int, payload: dict[str, Any]) -> dict[str, Any]:
+        ...
+
+    async def delete(self, entity_id: int) -> bool:
+        ...
+
+
+class V1CrudRouter[UC: CrudRouterUseCaseProtocol](ABC):
     prefix: str
-    tags: list[str] = ["v1-crud"]
-    use_case_cls: type[UC]
+    tags: list[str | Enum] = ["v1-crud"]
+    use_case_cls: type[Any]
 
     create_payload_model: type[BaseModel] = CrudPayloadDTO
     update_payload_model: type[BaseModel] = CrudPayloadDTO
@@ -30,7 +48,7 @@ class V1CrudRouter[UC: BaseCrudUseCase](ABC):
         self.register_custom_routes()
 
     def get_use_case(self, account: AccountEntity) -> UC:
-        return self.use_case_cls(account)
+        return cast(UC, cast(Any, self.use_case_cls)(account))
 
     def get_filter_aliases(self) -> dict[str, str]:
         return {}
@@ -80,7 +98,7 @@ class V1CrudRouter[UC: BaseCrudUseCase](ABC):
         ) -> dict[str, Any]:
             try:
                 use_case = self.get_use_case(account)
-                payload = data.model_dump()
+                payload = cast(BaseModel, data).model_dump()
                 if "data" in payload and isinstance(payload["data"], dict):
                     payload = payload["data"]
                 return await use_case.create(payload)
@@ -97,7 +115,7 @@ class V1CrudRouter[UC: BaseCrudUseCase](ABC):
         ) -> dict[str, Any]:
             try:
                 use_case = self.get_use_case(account)
-                payload = data.model_dump(exclude_unset=True)
+                payload = cast(BaseModel, data).model_dump(exclude_unset=True)
                 if "data" in payload and isinstance(payload["data"], dict):
                     payload = payload["data"]
                 return await use_case.update(entity_id, payload)

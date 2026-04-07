@@ -55,18 +55,20 @@ class EventOccurrenceMessageTortoiseRepository(
     def from_entity(
         self, entity: EventOccurrenceMessageEntity
     ) -> EventOccurrenceMessageModel:
-        return self.model(
-            id=entity.id,
-            event_occurrence_id=entity.event_occurrence_id,
-            parent_message_id=entity.parent_message_id,
-            event_id=entity.event_id,
-            event_member_id=entity.event_member_id,
-            text=entity.text,
-            image=entity.image,
-            is_active=entity.is_active,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-        )
+        payload: dict[str, object] = {
+            "event_occurrence_id": entity.event_occurrence_id,
+            "parent_message_id": entity.parent_message_id,
+            "event_id": entity.event_id,
+            "event_member_id": entity.event_member_id,
+            "text": entity.text,
+            "image": entity.image,
+            "is_active": entity.is_active,
+            "created_at": entity.created_at,
+            "updated_at": entity.updated_at,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register repository implementation in DI

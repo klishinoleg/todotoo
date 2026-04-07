@@ -51,16 +51,18 @@ class EventOccurrenceTortoiseRepository(
     # Mapping: Entity → Model
     # ---------------------------------------
     def from_entity(self, entity: EventOccurrenceEntity) -> EventOccurrenceModel:
-        return self.model(
-            id=entity.id,
-            event_id=entity.event_id,
-            start_at=entity.start_at,
-            end_at=entity.end_at,
-            members_count=entity.members_count,
-            location_id=entity.location_id,
-            is_canceled=entity.is_canceled,
-            is_finished=entity.is_finished,
-        )
+        payload: dict[str, object] = {
+            "event_id": entity.event_id,
+            "start_at": entity.start_at,
+            "end_at": entity.end_at,
+            "members_count": entity.members_count,
+            "location_id": entity.location_id,
+            "is_canceled": entity.is_canceled,
+            "is_finished": entity.is_finished,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register repository implementation in DI

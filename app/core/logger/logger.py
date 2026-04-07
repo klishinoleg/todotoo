@@ -1,7 +1,9 @@
+from typing import Any
+
 from core.enums.system.logger.message_levels import LogMessageLevel
 from core.exceptions.system import LoggerException
 from core.helpers.func.date_time import get_local_time
-from core.logger.base import LogMessage
+from core.logger.base import AuthLogMessage, LogMessage
 from core.messages.system.no_localized_messages import SystemMessages
 
 
@@ -33,3 +35,15 @@ class Logger:
         if msg.level.value != LogMessageLevel.ERROR:
             raise LoggerException(SystemMessages.INVALID_LOG_LEVEL_ERROR)
         cls.log(msg)
+
+    @classmethod
+    def auth(
+            cls,
+            event: str,
+            *,
+            level: LogMessageLevel = LogMessageLevel.INFO,
+            **payload: Any,
+    ) -> None:
+        msg = AuthLogMessage(level=level, event=event, payload=payload)
+        local_time, tz_name = get_local_time(msg.created_at)
+        print(f"[{local_time.isoformat()} / {tz_name}] {msg.serialize()}")

@@ -153,7 +153,7 @@ class BaseCrudUseCase[E: BaseEntity, FD: BaseFilter]:
         if not isinstance(value, dict):
             return value
         try:
-            filter_impl = DIRepository.get_filter(filter_field_type)
+            filter_impl: type[Any] = DIRepository.get_filter(filter_field_type)
             return filter_impl.model_validate(value)
         except RepositoryException:
             return value

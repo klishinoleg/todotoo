@@ -8,7 +8,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import polib
+import polib  # type: ignore[import-untyped]
 
 
 TRANSLATE_URL = "https://translate.googleapis.com/translate_a/single"

@@ -39,8 +39,8 @@ class BaseTortoiseRepository[T: BaseEntity, FD: BaseFilter[QuerySet], TM: BaseTo
 
     async def create(self, entity: T) -> T:
         new_model = self.from_entity(entity)
-        model = await new_model.create()
-        return await self.to_entity(model)
+        await new_model.save(force_create=True)
+        return await self.to_entity(new_model)
 
     async def bulk_create(self, entities: list[T]) -> list[T]:
         models = [self.from_entity(e) for e in entities]

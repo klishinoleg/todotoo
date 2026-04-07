@@ -7,9 +7,10 @@ import hmac
 import json
 import secrets
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, cast
 
 from jose import jwt
 from jose.constants import ALGORITHMS
@@ -18,6 +19,8 @@ from application.account.dto.auth.oauth_flow import OAuthAuthorizeUrlDTO
 from core.config.settings import settings
 from core.enums.app.account.auth_provider import AuthActionType, AuthProviderType
 from core.enums.system.error_fields import ErrorFields
+from core.enums.system.logger.message_levels import LogMessageLevel
+from core.logger.logger import Logger
 from domain.base.exceptions import DomainValidationException
 
 _STATE_TTL_SECONDS = 10 * 60
@@ -73,6 +76,13 @@ class OAuthFlowService:
             user: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         self.ensure_supported_provider(provider_type)
+        Logger.auth(
+            "oauth.exchange.start",
+            provider_type=str(provider_type),
+            has_code=bool(code),
+            redirect_uri=redirect_uri,
+            has_user=bool(user),
+        )
         return await asyncio.to_thread(
             self._exchange_code_for_provider_data_sync,
             provider_type,
@@ -176,7 +186,7 @@ class OAuthFlowService:
         if ts + _STATE_TTL_SECONDS < int(time.time()):
             raise DomainValidationException("OAuth state expired", field=ErrorFields.AUTH_PROVIDER_DATA)
 
-        return payload
+        return cast(dict[str, Any], payload)
 
     @staticmethod
     def _require_config(value: str, name: str) -> str:
@@ -191,12 +201,38 @@ class OAuthFlowService:
     @staticmethod
     def _http_get_json(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
         req = urllib.request.Request(url, headers=headers or {})
-        with urllib.request.urlopen(req, timeout=20) as response:
-            payload = response.read().decode("utf-8")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as response:
+                payload = response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="ignore")
+            Logger.auth(
+                "oauth.http.get.error",
+                level=LogMessageLevel.WARN,
+                code=exc.code,
+                reason=str(exc.reason),
+                body=body[:500],
+                url=url,
+            )
+            raise DomainValidationException(
+                f"OAuth provider HTTP error {exc.code}: {body or exc.reason}",
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
+        except urllib.error.URLError as exc:
+            Logger.auth(
+                "oauth.http.get.network_error",
+                level=LogMessageLevel.WARN,
+                reason=str(exc.reason),
+                url=url,
+            )
+            raise DomainValidationException(
+                f"OAuth provider network error: {exc.reason}",
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
         data = json.loads(payload)
         if not isinstance(data, dict):
             raise DomainValidationException("OAuth provider returned invalid JSON", field=ErrorFields.AUTH_PROVIDER_DATA)
-        return data
+        return cast(dict[str, Any], data)
 
     @staticmethod
     def _http_post_form_json(url: str, data: dict[str, Any], headers: dict[str, str] | None = None) -> dict[str, Any]:
@@ -205,12 +241,38 @@ class OAuthFlowService:
         if headers:
             final_headers.update(headers)
         req = urllib.request.Request(url, data=encoded, headers=final_headers, method="POST")
-        with urllib.request.urlopen(req, timeout=20) as response:
-            payload = response.read().decode("utf-8")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as response:
+                payload = response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="ignore")
+            Logger.auth(
+                "oauth.http.post.error",
+                level=LogMessageLevel.WARN,
+                code=exc.code,
+                reason=str(exc.reason),
+                body=body[:500],
+                url=url,
+            )
+            raise DomainValidationException(
+                f"OAuth provider HTTP error {exc.code}: {body or exc.reason}",
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
+        except urllib.error.URLError as exc:
+            Logger.auth(
+                "oauth.http.post.network_error",
+                level=LogMessageLevel.WARN,
+                reason=str(exc.reason),
+                url=url,
+            )
+            raise DomainValidationException(
+                f"OAuth provider network error: {exc.reason}",
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
         parsed = json.loads(payload)
         if not isinstance(parsed, dict):
             raise DomainValidationException("OAuth provider returned invalid JSON", field=ErrorFields.AUTH_PROVIDER_DATA)
-        return parsed
+        return cast(dict[str, Any], parsed)
 
     @staticmethod
     def _decode_jwt_payload(token: str) -> dict[str, Any]:
@@ -225,6 +287,17 @@ class OAuthFlowService:
         except Exception:
             return {}
         return {}
+
+    @staticmethod
+    def _attach_raw_data(payload: dict[str, Any]) -> dict[str, Any]:
+        # Ensure raw_data is JSON-serializable and not self-referential.
+        raw_data = payload.get("raw_data")
+        if isinstance(raw_data, dict):
+            payload["raw_data"] = dict(raw_data)
+            return payload
+
+        payload["raw_data"] = {key: value for key, value in payload.items() if key != "raw_data"}
+        return payload
 
     def _build_google_auth_url(self, state: str, redirect_uri: str | None = None) -> str:
         client_id = self._require_config(settings.auth.google_client_id, "AUTH_GOOGLE_CLIENT_ID")
@@ -261,8 +334,17 @@ class OAuthFlowService:
                 "grant_type": "authorization_code",
             },
         )
+        Logger.auth(
+            "oauth.google.token.exchanged",
+            provider_type=str(AuthProviderType.GOOGLE),
+            has_access_token=bool(token_response.get("access_token")),
+            has_id_token=bool(token_response.get("id_token")),
+            redirect_uri=callback_uri,
+        )
 
         access_token = str(token_response.get("access_token") or "")
+        id_token = str(token_response.get("id_token") or "")
+        id_token_claims = self._decode_jwt_payload(id_token) if id_token else {}
         userinfo: dict[str, Any] = {}
         if access_token:
             userinfo = self._http_get_json(
@@ -271,10 +353,34 @@ class OAuthFlowService:
             )
 
         if not userinfo:
-            id_token = str(token_response.get("id_token") or "")
-            userinfo = self._decode_jwt_payload(id_token)
+            userinfo = id_token_claims
+        elif id_token_claims:
+            for key in ("sub", "email", "email_verified", "given_name", "family_name", "picture"):
+                if key not in userinfo and key in id_token_claims:
+                    userinfo[key] = id_token_claims[key]
 
-        userinfo["raw_data"] = userinfo.get("raw_data") or userinfo
+        if not userinfo.get("sub"):
+            Logger.auth(
+                "oauth.google.invalid_userinfo",
+                level=LogMessageLevel.WARN,
+                provider_type=str(AuthProviderType.GOOGLE),
+                has_sub=False,
+                has_email=bool(userinfo.get("email")),
+                keys=sorted(list(userinfo.keys())),
+            )
+            raise DomainValidationException(
+                "Google user identifier (sub) not found in oauth response",
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
+
+        userinfo = self._attach_raw_data(userinfo)
+        Logger.auth(
+            "oauth.google.userinfo.ready",
+            provider_type=str(AuthProviderType.GOOGLE),
+            has_sub=True,
+            has_email=bool(userinfo.get("email")),
+            has_email_verified=bool(userinfo.get("email_verified")),
+        )
         return userinfo
 
     def _build_facebook_auth_url(self, state: str, redirect_uri: str | None = None) -> str:
@@ -320,8 +426,7 @@ class OAuthFlowService:
             {"fields": "id,name,email,picture", "access_token": access_token}
         )
         userinfo = self._http_get_json(f"https://graph.facebook.com/v22.0/me?{user_query}")
-        userinfo["raw_data"] = userinfo.get("raw_data") or userinfo
-        return userinfo
+        return self._attach_raw_data(userinfo)
 
     def _build_apple_auth_url(self, state: str, redirect_uri: str | None = None) -> str:
         client_id = self._require_config(settings.auth.apple_client_id, "AUTH_APPLE_CLIENT_ID")
@@ -394,5 +499,4 @@ class OAuthFlowService:
         claims = self._decode_jwt_payload(id_token)
         if user:
             claims["user"] = user
-        claims["raw_data"] = claims.get("raw_data") or claims
-        return claims
+        return self._attach_raw_data(claims)

@@ -7,7 +7,7 @@ SOURCE_LANG ?= en
 comma := ,
 LANG_PIPE := $(subst $(comma),|,$(strip $(LANGS)))
 
-.PHONY: localize i18n-makemessages translate help
+.PHONY: localize i18n-makemessages translate test help
 
 i18n-makemessages: ## Extract messages and update locale catalogs
 	$(I18N_CLI) -d "$(LOCALE)" -l "$(LANG_PIPE)" -s "$(SOURCE_LANG)" makemessages
@@ -23,6 +23,9 @@ localize: ## makemessages -> translate -> makemessages
 db:
 	aerich migrate
 	aerich upgrade
+
+test:
+	$(PYTHON) -m pytest -q
 
 help:
 	@echo "Usage:"

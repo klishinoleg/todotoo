@@ -38,15 +38,17 @@ class EventScheduleRuleTortoiseRepository(
         )
 
     def from_entity(self, entity: EventScheduleRuleEntity) -> EventScheduleRuleModel:
-        return self.model(
-            id=entity.id,
-            type=entity.type,
-            date=entity.date,
-            day_of_week=entity.day_of_week,
-            day_of_month=entity.day_of_month,
-            start_time=entity.start_time,
-            end_time=entity.end_time,
-        )
+        payload: dict[str, object] = {
+            "type": entity.type,
+            "date": entity.date,
+            "day_of_week": entity.day_of_week,
+            "day_of_month": entity.day_of_month,
+            "start_time": entity.start_time,
+            "end_time": entity.end_time,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 DIRepository.register(EventScheduleRuleEntity, EventScheduleRuleTortoiseRepository, RepositoryType.TORTOISE)

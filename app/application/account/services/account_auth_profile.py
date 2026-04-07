@@ -50,17 +50,21 @@ class AccountAuthProfileService(
             self, provider_type: AuthProviderType, provider_data: BaseAuthProviderData
     ) -> AccountAuthProfileEntity | None:
         provider_id = str(provider_data.get_user_id())
+        filter_data: AccountAuthProfileFilter = AccountAuthProfileFilter.model_construct(
+            provider_id=self.eq(equal=provider_id),
+            provider_type=self.eq(equal=provider_type),
+        )
         entities = await self.repository.filtered_list(
-            AccountAuthProfileFilter(
-                provider_id=self.eq(equal=provider_id),
-                provider_type=self.eq(equal=provider_type)
-            )
+            filter_data
         )
         if len(entities) == 0:
             return None
         return entities[0]
 
     async def get_by_account_id(self, account_id: int) -> list[AccountAuthProfileEntity]:
+        filter_data: AccountAuthProfileFilter = AccountAuthProfileFilter.model_construct(
+            account_id=self.eq(equal=account_id),
+        )
         return await self.repository.filtered_list(
-            AccountAuthProfileFilter(account_id=self.eq(equal=account_id))
+            filter_data
         )

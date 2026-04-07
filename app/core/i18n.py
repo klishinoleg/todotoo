@@ -3,6 +3,7 @@ from __future__ import annotations
 import gettext
 from contextvars import ContextVar
 from functools import lru_cache
+from pathlib import Path
 
 from core.config.settings import settings
 

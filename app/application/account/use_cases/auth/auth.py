@@ -1,6 +1,6 @@
 from application.account.dto.account import AccountDTO
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
-from application.account.dto.auth.request.oauth import AuthRequestOAuthLoginDTO, AuthRequestOAuthSignUpDTO
+from application.account.dto.auth.request.oauth import AuthRequestOAuthDTO, AuthRequestOAuthLoginDTO, AuthRequestOAuthSignUpDTO
 from application.account.dto.auth.request.registration import AuthRequestSignUpDTO, AuthRequestLoginDTO
 from application.account.dto.auth.request.telegram import AuthRequestTelegramDTO
 from application.account.dto.auth.response import AuthResponseDTO
@@ -12,7 +12,9 @@ from core.di.auth import DIAuthProviderData
 from core.di.repository import DIRepositoryTransaction
 from core.enums.app.account.auth_provider import AuthProviderType
 from core.enums.system.error_fields import ErrorFields
+from core.enums.system.logger.message_levels import LogMessageLevel
 from core.exceptions.system import AccessControlException
+from core.logger.logger import Logger
 from core.messages.account.access_control import AccessControlMessages
 from core.messages.system.no_localized_messages import SystemMessages
 from domain.account.entities.account import AccountEntity
@@ -61,11 +63,43 @@ class AuthUseCase:
         async with self.repository_transaction.start():
             prepared_provider_data = provider_data.prepare_for_storage()
             new_account = await AccountEntity.create_from_auth_provider_data(prepared_provider_data)
-            account = await self.account_service.create(new_account)
+            Logger.auth(
+                "auth.oauth.account_create.attempt",
+                provider_type=str(provider_type),
+                username=str(getattr(new_account, "username", "")),
+                email=str(getattr(new_account, "email", "")),
+                public_name=str(getattr(new_account, "public_name", "")),
+            )
+            try:
+                account = await self.account_service.create(new_account)
+            except Exception as exc:
+                Logger.auth(
+                    "auth.oauth.account_create.error",
+                    level=LogMessageLevel.WARN,
+                    provider_type=str(provider_type),
+                    detail=str(exc),
+                )
+                raise DomainValidationException(
+                    message=f"Account creation failed: {exc}",
+                    field=ErrorFields.ACCOUNT,
+                )
             assert account.id is not None
             new_auth_profile = AccountAuthProfileEntity.create_from_provider_type_and_data(
                 provider_type, account.id, prepared_provider_data)
-            auth_profile = await self.account_auth_profile_service.create(new_auth_profile)
+            try:
+                auth_profile = await self.account_auth_profile_service.create(new_auth_profile)
+            except Exception as exc:
+                Logger.auth(
+                    "auth.oauth.profile_create.error",
+                    level=LogMessageLevel.WARN,
+                    provider_type=str(provider_type),
+                    account_id=account.id,
+                    detail=str(exc),
+                )
+                raise DomainValidationException(
+                    message=f"Auth profile creation failed: {exc}",
+                    field=ErrorFields.AUTH_PROVIDER_DATA,
+                )
         return account, auth_profile
 
     @staticmethod
@@ -141,6 +175,36 @@ class AuthUseCase:
         account, auth_profile = await self._create_account_with_auth_profile(dto.provider_type, provider_data)
         return self._get_response_dto(account, auth_profile)
 
+    async def oauth_auth(self, dto: AuthRequestOAuthDTO) -> AuthResponseDTO:
+        Logger.auth(
+            "auth.oauth.auto.start",
+            provider_type=str(dto.provider_type),
+        )
+        provider_data = DIAuthProviderData.get(dto.provider_type, dto.provider_data.model_dump())
+        await self.account_auth_profile_service.ensure_is_valid_provider_data(dto.provider_type, provider_data)
+        existed_auth_profile = await self.account_auth_profile_service.get_or_none_by_provider_and_id(
+            dto.provider_type, provider_data
+        )
+        if existed_auth_profile:
+            account = await self.account_service.get(existed_auth_profile.account_id)
+            auth_profile = existed_auth_profile
+            Logger.auth(
+                "auth.oauth.auto.login",
+                provider_type=str(dto.provider_type),
+                account_id=account.id if account else None,
+                profile_id=auth_profile.id,
+            )
+        else:
+            account, auth_profile = await self._create_account_with_auth_profile(dto.provider_type, provider_data)
+            Logger.auth(
+                "auth.oauth.auto.register",
+                provider_type=str(dto.provider_type),
+                account_id=account.id,
+                profile_id=auth_profile.id,
+            )
+        assert account is not None
+        return self._get_response_dto(account, auth_profile)
+
     async def login(self, dto: AuthRequestLoginDTO | AuthRequestOAuthLoginDTO) -> AuthResponseDTO:
         """
         Log in an existing user using an external auth provider.
@@ -186,6 +250,14 @@ class AuthUseCase:
         profiles = await self.account_auth_profile_service.get_by_account_id(account.id)
         return list(map(AccountAuthProfileDTO.from_entity, profiles))
 
+    async def logout(self, account: AccountEntity) -> bool:
+        if account.id is None:
+            raise DomainValidationException(
+                message=AccessControlMessages.account_not_found(),
+                field=ErrorFields.ACCOUNT,
+            )
+        return await self.account_session_service.close_active(account.id)
+
     async def get_account_by_token(self, token: str) -> AccountEntity:
         token_provider = DIAccessTokenProvider.get()
         try:
@@ -196,6 +268,11 @@ class AuthUseCase:
             await self.account_session_service.save(incremented_account_session, update_fields={"requests"})
             return account
         except AccessControlException as e:
+            Logger.auth(
+                "auth.token.invalid",
+                level=LogMessageLevel.WARN,
+                reason=str(e),
+            )
             message = AccessControlMessages.invalid_token()
             match str(e):
                 case SystemMessages.ACCESS_TOKEN_EXPIRED:

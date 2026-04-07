@@ -26,11 +26,12 @@ class AccountSessionService(BaseService[AccountSessionEntity, AccountSessionFilt
         self.range: Type[RangeFilterField] = DIRepository.get_filter(FilterFieldType.RANGE)
 
     async def get_or_create_active(self, account_id: int) -> AccountSessionEntity:
+        filter_data: AccountSessionFilter = AccountSessionFilter.model_construct(
+            closed_at=self.range(is_null=True),
+            account_id=self.eq(equal=account_id),
+        )
         active_sessions = await self.repository.filtered_list(
-            AccountSessionFilter(
-                closed_at=self.range(is_null=True),
-                account_id=self.eq(equal=account_id)
-            )
+            filter_data
         )
         if len(active_sessions) == 0:
             new_session = AccountSessionEntity.create_from_account_id(account_id)
@@ -39,3 +40,17 @@ class AccountSessionService(BaseService[AccountSessionEntity, AccountSessionFilt
             active_session = active_sessions[0]
         assert active_session is not None
         return active_session
+
+    async def close_active(self, account_id: int) -> bool:
+        filter_data: AccountSessionFilter = AccountSessionFilter.model_construct(
+            closed_at=self.range(is_null=True),
+            account_id=self.eq(equal=account_id),
+        )
+        active_sessions = await self.repository.filtered_list(filter_data)
+        if len(active_sessions) == 0:
+            return False
+
+        active_session = active_sessions[0]
+        closed_session = active_session.close()
+        await self.save(closed_session, update_fields={"closed_at"})
+        return True

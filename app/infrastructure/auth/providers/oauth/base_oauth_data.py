@@ -69,7 +69,10 @@ class OAuthProviderData(BaseAuthProviderData):
             return self.username
         if self.email:
             return self.email
-        return f"oauth:{self.provider_user_id}"
+        provider_id = self.provider_user_id.strip()
+        if provider_id:
+            return f"oauth:{provider_id}"
+        return "oauth:user"
 
     def get_public_name(self) -> str | None:
         full_name = " ".join(part for part in (self.first_name, self.last_name) if part).strip()
@@ -91,4 +94,3 @@ class OAuthProviderData(BaseAuthProviderData):
 
     def get_contact_url(self) -> str | None:
         return None
-

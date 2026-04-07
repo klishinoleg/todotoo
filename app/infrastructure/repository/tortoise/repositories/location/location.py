@@ -61,20 +61,22 @@ class LocationTortoiseRepository(
     # ---------------------------------------
     def from_entity(self, entity: LocationEntity) -> LocationModel:
         storage = get_storage()
-        return self.model(
-            id=entity.id,
-            name=entity.name,
-            type=entity.type,
-            point=to_postgis_point(entity.point),
-            polygon=to_postgis_polygon(entity.polygon),
-            address_raw=entity.address_raw,
-            address_structured=entity.address_structured,
-            parent_id=entity.parent_id,
-            image=storage.to_key(entity.image),
-            is_active=entity.is_active,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-        )
+        payload: dict[str, object] = {
+            "name": entity.name,
+            "type": entity.type,
+            "point": to_postgis_point(entity.point),
+            "polygon": to_postgis_polygon(entity.polygon),
+            "address_raw": entity.address_raw,
+            "address_structured": entity.address_structured,
+            "parent_id": entity.parent_id,
+            "image": storage.to_key(entity.image),
+            "is_active": entity.is_active,
+            "created_at": entity.created_at,
+            "updated_at": entity.updated_at,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register concrete repository in DI

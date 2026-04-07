@@ -2,6 +2,7 @@ from typing import Optional, Type
 
 from tortoise.transactions import in_transaction
 
+from core.db import MASTER_CONNECTION
 from core.di.repository import DIRepositoryTransaction
 from core.enums.di.repository import RepositoryType
 from infrastructure.repository.transaction import RepositoryTransactionManager, RepositoryTransaction
@@ -9,7 +10,7 @@ from infrastructure.repository.transaction import RepositoryTransactionManager, 
 
 class TortoiseTransaction(RepositoryTransaction):
     def __init__(self) -> None:
-        self._ctx = in_transaction()
+        self._ctx = in_transaction(MASTER_CONNECTION)
 
     async def __aenter__(self) -> "TortoiseTransaction":
         self._conn = await self._ctx.__aenter__()

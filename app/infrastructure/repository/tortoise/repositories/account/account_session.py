@@ -45,13 +45,15 @@ class AccountSessionTortoiseRepository(
     # Mapping: Entity → Model for DB insert/update
     # ---------------------------------------
     def from_entity(self, entity: AccountSessionEntity) -> AccountSessionModel:
-        return self.model(
-            id=entity.id,
-            account_id=entity.account_id,
-            requests=entity.requests,
-            started_at=entity.started_at,
-            closed_at=entity.closed_at,
-        )
+        payload: dict[str, object] = {
+            "account_id": entity.account_id,
+            "requests": entity.requests,
+            "started_at": entity.started_at,
+            "closed_at": entity.closed_at,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register in DI

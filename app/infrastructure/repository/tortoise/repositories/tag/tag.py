@@ -45,15 +45,17 @@ class TagTortoiseRepository(
     # ---------------------------------------
     def from_entity(self, entity: TagEntity) -> TagModel:
         storage = get_storage()
-        return self.model(
-            id=entity.id,
-            name=entity.name,
-            slug=entity.slug,
-            parent_id=entity.parent_id,
-            ordering=entity.ordering,
-            is_active=entity.is_active,
-            icon=storage.to_key(entity.icon),
-        )
+        payload: dict[str, object] = {
+            "name": entity.name,
+            "slug": entity.slug,
+            "parent_id": entity.parent_id,
+            "ordering": entity.ordering,
+            "is_active": entity.is_active,
+            "icon": storage.to_key(entity.icon),
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 # Register repository implementation in DI

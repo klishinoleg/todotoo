@@ -50,18 +50,24 @@ class AccountTortoiseRepository(
     # ---------------------------------------
     def from_entity(self, entity: AccountEntity) -> AccountModel:
         storage = get_storage()
-        return self.model(
-            id=entity.id,
-            username=entity.username,
-            public_name=entity.public_name,
-            email=entity.email,
-            language=entity.language,
-            is_online=entity.is_online,
-            avatar=storage.to_key(entity.avatar),
-            is_active=entity.is_active,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-        )
+        username = str(entity.username or "").strip()
+        if not username:
+            email = str(entity.email or "").strip()
+            username = email or "oauth:user"
+        payload: dict[str, object] = {
+            "username": username,
+            "public_name": entity.public_name,
+            "email": entity.email,
+            "language": entity.language,
+            "is_online": entity.is_online,
+            "avatar": storage.to_key(entity.avatar),
+            "is_active": entity.is_active,
+            "created_at": entity.created_at,
+            "updated_at": entity.updated_at,
+        }
+        if entity.id is not None:
+            payload["id"] = entity.id
+        return self.model(**payload)
 
 
 DIRepository.register(AccountEntity, AccountTortoiseRepository, RepositoryType.TORTOISE)

@@ -18,6 +18,7 @@ OAUTH_PROVIDER_TYPES = {
 
 class OAuthProviderDataDTO(BaseModel):
     provider_user_id: str | None = None
+    sub: str | None = None
 
     email: str | None = None
     email_verified: bool = False
@@ -26,6 +27,9 @@ class OAuthProviderDataDTO(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     avatar_url: str | None = None
+    given_name: str | None = None
+    family_name: str | None = None
+    picture: str | None = None
     raw_data: dict[str, Any] | None = None
 
     # Telegram Web Login support
@@ -33,6 +37,23 @@ class OAuthProviderDataDTO(BaseModel):
     photo_url: str | None = None
     auth_date: int | str | None = None
     hash: str | None = None
+
+    @model_validator(mode="after")
+    def normalize_provider_fields(self) -> "OAuthProviderDataDTO":
+        if not self.provider_user_id:
+            if self.sub:
+                self.provider_user_id = self.sub
+            elif self.id is not None:
+                self.provider_user_id = str(self.id)
+
+        if not self.first_name and self.given_name:
+            self.first_name = self.given_name
+        if not self.last_name and self.family_name:
+            self.last_name = self.family_name
+        if not self.avatar_url:
+            self.avatar_url = self.picture or self.photo_url
+
+        return self
 
 
 class AuthRequestOAuthSignUpDTO(AuthRequestDTO[OAuthProviderDataDTO]):
@@ -52,6 +73,17 @@ class AuthRequestOAuthLoginDTO(AuthRequestDTO[OAuthProviderDataDTO]):
 
     @model_validator(mode="after")
     def validate_provider_type(self) -> "AuthRequestOAuthLoginDTO":
+        if self.provider_type not in OAUTH_PROVIDER_TYPES:
+            raise ValueError("provider_type must be one of oauth providers")
+        return self
+
+
+class AuthRequestOAuthDTO(AuthRequestDTO[OAuthProviderDataDTO]):
+    action_type: AuthActionType | None = Field(default=None)
+    provider_type: AuthProviderType
+
+    @model_validator(mode="after")
+    def validate_provider_type(self) -> "AuthRequestOAuthDTO":
         if self.provider_type not in OAUTH_PROVIDER_TYPES:
             raise ValueError("provider_type must be one of oauth providers")
         return self
