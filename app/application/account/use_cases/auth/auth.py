@@ -6,6 +6,7 @@ from application.account.dto.auth.request.telegram import AuthRequestTelegramDTO
 from application.account.dto.auth.response import AuthResponseDTO
 from application.account.services.account import AccountService
 from application.account.services.account_auth_profile import AccountAuthProfileService
+from application.account.services.avatar_storage import AvatarStorageService
 from application.account.services.account_session import AccountSessionService
 from core.di.access_control import DIAccessTokenProvider, DIPasswordHasherProvider
 from core.di.auth import DIAuthProviderData
@@ -17,6 +18,7 @@ from core.exceptions.system import AccessControlException
 from core.logger.logger import Logger
 from core.messages.account.access_control import AccessControlMessages
 from core.messages.system.no_localized_messages import SystemMessages
+from core.storage import get_storage
 from domain.account.entities.account import AccountEntity
 from domain.account.entities.account_auth_profile import AccountAuthProfileEntity
 from domain.account.entities.auth.provider_data import BaseAuthProviderData
@@ -39,6 +41,7 @@ class AuthUseCase:
         self.account_auth_profile_service = AccountAuthProfileService()
         self.repository_transaction = DIRepositoryTransaction.get()
         self.account_session_service = AccountSessionService()
+        self.avatar_storage_service = AvatarStorageService()
 
     async def _create_account_with_auth_profile(
             self, provider_type: AuthProviderType, provider_data: BaseAuthProviderData
@@ -63,6 +66,9 @@ class AuthUseCase:
         async with self.repository_transaction.start():
             prepared_provider_data = provider_data.prepare_for_storage()
             new_account = await AccountEntity.create_from_auth_provider_data(prepared_provider_data)
+            persisted_avatar = await self.avatar_storage_service.persist_external_avatar(new_account.avatar)
+            if persisted_avatar != new_account.avatar:
+                new_account = new_account.get_new_updated({"avatar": persisted_avatar})
             Logger.auth(
                 "auth.oauth.account_create.attempt",
                 provider_type=str(provider_type),
@@ -101,6 +107,30 @@ class AuthUseCase:
                     field=ErrorFields.AUTH_PROVIDER_DATA,
                 )
         return account, auth_profile
+
+    async def _sync_account_avatar(self, account: AccountEntity, provider_data: BaseAuthProviderData) -> AccountEntity:
+        provider_avatar = await provider_data.get_image_url()
+        if not provider_avatar:
+            return account
+
+        persisted_avatar = await self.avatar_storage_service.persist_external_avatar(provider_avatar)
+        if not persisted_avatar:
+            return account
+
+        storage = get_storage()
+        current_key = storage.to_key(account.avatar)
+        target_key = storage.to_key(persisted_avatar)
+        if current_key and target_key and current_key == target_key:
+            return account
+
+        updated = account.get_new_updated({"avatar": persisted_avatar})
+        saved = await self.account_service.save(updated, update_fields={"avatar"})
+        Logger.auth(
+            "auth.oauth.avatar.synced",
+            account_id=saved.id,
+            avatar=storage.get_url(saved.avatar),
+        )
+        return saved
 
     @staticmethod
     def _get_response_dto(account: AccountEntity, auth_profile: AccountAuthProfileEntity) -> AuthResponseDTO:
@@ -188,6 +218,8 @@ class AuthUseCase:
         if existed_auth_profile:
             account = await self.account_service.get(existed_auth_profile.account_id)
             auth_profile = existed_auth_profile
+            assert account is not None
+            account = await self._sync_account_avatar(account, provider_data)
             Logger.auth(
                 "auth.oauth.auto.login",
                 provider_type=str(dto.provider_type),
@@ -196,6 +228,7 @@ class AuthUseCase:
             )
         else:
             account, auth_profile = await self._create_account_with_auth_profile(dto.provider_type, provider_data)
+            account = await self._sync_account_avatar(account, provider_data)
             Logger.auth(
                 "auth.oauth.auto.register",
                 provider_type=str(dto.provider_type),

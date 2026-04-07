@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from application.account.dto.auth.oauth_flow import OAuthCallbackDTO
+from application.account.services.avatar_storage import AvatarStorageService
+from core.config.settings import settings
 from application.account.services.oauth_flow import OAuthFlowService
 from core.enums.app.account.auth_provider import AuthProviderType
+from core.enums.di.storage import StorageType
 from infrastructure.repository.tortoise.models.account.account import AccountModel
 from infrastructure.repository.tortoise.models.account.account_auth_profile import AccountAuthProfileModel
 from interfaces.fast_api.routers.auth import oauth_callback
@@ -40,6 +44,9 @@ async def test_google_callback_creates_account_and_then_reuses_existing() -> Non
     with patch(
         "application.account.services.oauth_flow.OAuthFlowService.exchange_code_for_provider_data",
         new=AsyncMock(return_value=GOOGLE_PROVIDER_DATA),
+    ), patch(
+        "application.account.services.avatar_storage.AvatarStorageService.persist_external_avatar",
+        new=AsyncMock(return_value="avatars/oauth/mock-avatar.jpg"),
     ):
         first = await oauth_callback(AuthProviderType.GOOGLE, callback_dto)
         second = await oauth_callback(AuthProviderType.GOOGLE, callback_dto)
@@ -47,6 +54,7 @@ async def test_google_callback_creates_account_and_then_reuses_existing() -> Non
     assert first.account.id is not None
     assert first.token
     assert first.account.username == "klishinoleg@gmail.com"
+    assert first.account.avatar is not None
     assert first.auth.provider_type == AuthProviderType.GOOGLE
     assert first.auth.provider_id == GOOGLE_PROVIDER_DATA["sub"]
 
@@ -67,3 +75,20 @@ def test_attach_raw_data_breaks_self_reference() -> None:
     assert isinstance(result["raw_data"], dict)
     assert result["raw_data"] is not result
     assert result["raw_data"]["sub"] == "100967877670052977416"
+
+
+@pytest.mark.asyncio
+async def test_avatar_storage_persists_external_avatar_to_local(tmp_path: Path) -> None:
+    service = AvatarStorageService()
+    old_type = settings.storage.type
+    old_upload_dir = settings.storage.local_upload_dir
+    settings.storage.type = StorageType.LOCAL
+    settings.storage.local_upload_dir = str(tmp_path)
+    try:
+        with patch.object(AvatarStorageService, "_download_image", return_value=(b"abc", "image/jpeg")):
+            key = await service.persist_external_avatar("https://example.com/avatar.jpg")
+        assert key is not None
+        assert (tmp_path / key).is_file()
+    finally:
+        settings.storage.type = old_type
+        settings.storage.local_upload_dir = old_upload_dir
