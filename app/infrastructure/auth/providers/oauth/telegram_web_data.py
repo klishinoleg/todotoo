@@ -1,7 +1,8 @@
 import hashlib
 import hmac
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import ClassVar
 
 from core.config.settings import settings
 from core.di.auth import DIAuthProviderData
@@ -11,9 +12,11 @@ from infrastructure.auth.providers.oauth.base_oauth_data import OAuthProviderDat
 
 @dataclass(slots=True)
 class TelegramWebProviderData(OAuthProviderData):
-    auth_lifetime_seconds: int = 24 * 60 * 60
+    auth_lifetime_seconds: ClassVar[int] = 24 * 60 * 60
+    _validation_source: dict = field(init=False, repr=False, default_factory=dict)
 
     def __init__(self, provider_raw_data: dict) -> None:
+        self._validation_source = dict(provider_raw_data)
         normalized = dict(provider_raw_data)
         normalized.setdefault("provider_user_id", provider_raw_data.get("id"))
         normalized.setdefault("avatar_url", provider_raw_data.get("photo_url"))
@@ -26,7 +29,7 @@ class TelegramWebProviderData(OAuthProviderData):
         if not super().is_valid():
             return False
 
-        source = dict(self._provider_raw_data)
+        source = dict(self._validation_source)
         received_hash = source.pop("hash", None)
         if not received_hash:
             return False
@@ -43,6 +46,8 @@ class TelegramWebProviderData(OAuthProviderData):
 
         pairs: list[str] = []
         for key in sorted(source):
+            if key in {"provider_user_id", "avatar_url", "raw_data", "email", "email_verified"}:
+                continue
             value = source[key]
             if value is None:
                 continue
