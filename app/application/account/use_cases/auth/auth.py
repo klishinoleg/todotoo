@@ -109,6 +109,10 @@ class AuthUseCase:
         return account, auth_profile
 
     async def _sync_account_avatar(self, account: AccountEntity, provider_data: BaseAuthProviderData) -> AccountEntity:
+        # Keep user-selected/custom avatar untouched after first assignment.
+        if account.avatar:
+            return account
+
         provider_avatar = await provider_data.get_image_url()
         if not provider_avatar:
             return account
