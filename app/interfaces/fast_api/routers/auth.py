@@ -5,6 +5,7 @@ from application.account.dto.account import AccountDTO
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
 from application.account.dto.auth.oauth_flow import OAuthAuthorizeUrlDTO, OAuthCallbackDTO
 from application.account.dto.auth.profile_management import (
+    AuthProfileLinkConfirmRequestDTO,
     AuthProfileOAuthCallbackLinkRequestDTO,
     AuthPasswordProfileLinkRequestDTO,
     AuthProfileDeleteResponseDTO,
@@ -91,6 +92,20 @@ async def link_password_profile(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
 
 
+@router.post("/profiles/link/confirm/", response_model=AuthProfileLinkResponseDTO)
+async def confirm_link_auth_profile(
+        data: AuthProfileLinkConfirmRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthProfileLinkResponseDTO:
+    try:
+        return await AuthProfileManagementUseCase().confirm_link_merge(
+            account=account,
+            operation_code=data.operation_code,
+        )
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
 @router.delete("/profiles/{profile_id}/", response_model=AuthProfileDeleteResponseDTO)
 async def delete_profile(
         profile_id: int,
@@ -147,7 +162,8 @@ async def link_oauth_profile_callback(
             provider_type=str(provider_type),
             account_id=account.id,
             status=result.status,
-            profile_id=result.profile.id,
+            profile_id=result.profile.id if result.profile else None,
+            operation_code=result.operation_code,
             merged_account_id=result.merged_account_id,
             merged_account_deleted=result.merged_account_deleted,
         )

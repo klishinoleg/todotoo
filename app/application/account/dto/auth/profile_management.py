@@ -25,10 +25,12 @@ class AuthPasswordProfileLinkRequestDTO(BaseModel):
 
 
 class AuthProfileLinkResponseDTO(BaseModel):
-    status: Literal["linked", "already_linked"]
-    profile: AccountAuthProfileDTO
+    status: Literal["linked", "already_linked", "confirmation_required"]
+    profile: AccountAuthProfileDTO | None = None
     merged_account_id: int | None = None
     merged_account_deleted: bool = False
+    operation_code: str | None = None
+    detail: str | None = None
 
 
 class AuthProfileDeleteResponseDTO(BaseModel):
@@ -43,3 +45,7 @@ class AuthProfileOAuthCallbackLinkRequestDTO(BaseModel):
     redirect_uri: str | None = None
     user: dict[str, Any] | None = None
     confirm_merge: bool = False
+
+
+class AuthProfileLinkConfirmRequestDTO(BaseModel):
+    operation_code: str = Field(min_length=8)

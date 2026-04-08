@@ -6,6 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 from application.account.dto.auth.profile_management import (
+    AuthProfileLinkConfirmRequestDTO,
     AuthPasswordProfileLinkRequestDTO,
     AuthProfileOAuthCallbackLinkRequestDTO,
 )
@@ -20,6 +21,7 @@ from core.enums.app.account.auth_provider import AuthProviderType
 from domain.account.entities.account import AccountEntity
 from infrastructure.repository.tortoise.models.account.account import AccountModel
 from interfaces.fast_api.routers.auth import (
+    confirm_link_auth_profile,
     delete_profile,
     get_profiles,
     link_oauth_profile_callback,
@@ -64,6 +66,7 @@ async def test_link_password_profile_to_existing_account() -> None:
     )
 
     assert result.status == "linked"
+    assert result.profile is not None
     assert result.profile.provider_type == AuthProviderType.PASSWORD
     assert result.profile.account_id == account_id
 
@@ -101,6 +104,7 @@ async def test_link_google_profile_via_callback_for_current_account() -> None:
         result = await link_oauth_profile_callback(AuthProviderType.GOOGLE, callback_request, account=account)
 
     assert result.status == "linked"
+    assert result.profile is not None
     assert result.profile.provider_type == AuthProviderType.GOOGLE
     assert result.profile.account_id == account.id
 
@@ -118,6 +122,7 @@ async def test_delete_profile_forbidden_for_last_profile() -> None:
         ),
         account=account,
     )
+    assert linked.profile is not None
 
     deleted = await delete_profile(linked.profile.id, account=account)
     assert deleted.status == "deleted"
@@ -148,29 +153,25 @@ async def test_link_password_requires_merge_confirmation_then_merges() -> None:
     )
     assert await AccountModel.all().count() == 2
 
-    with pytest.raises(HTTPException) as exc:
-        await link_password_profile(
-            AuthPasswordProfileLinkRequestDTO(
-                email="conflict.user@example.com",
-                password="StrongPass123",
-                confirm_password="StrongPass123",
-                confirm_merge=False,
-            ),
-            account=account_a,
-        )
-    assert exc.value.status_code == 422
-    assert "confirm_merge=true" in str(exc.value.detail)
-
-    merged = await link_password_profile(
+    pending = await link_password_profile(
         AuthPasswordProfileLinkRequestDTO(
             email="conflict.user@example.com",
             password="StrongPass123",
             confirm_password="StrongPass123",
-            confirm_merge=True,
+            confirm_merge=False,
         ),
         account=account_a,
     )
+    assert pending.status == "confirmation_required"
+    assert pending.operation_code is not None
+    assert pending.profile is None
+
+    merged = await confirm_link_auth_profile(
+        AuthProfileLinkConfirmRequestDTO(operation_code=pending.operation_code),
+        account=account_a,
+    )
     assert merged.status == "linked"
+    assert merged.profile is not None
     assert merged.merged_account_deleted is True
     assert merged.merged_account_id is not None
     assert await AccountModel.all().count() == 1

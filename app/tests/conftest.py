@@ -11,6 +11,8 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
+from core.config.settings import settings
+from core.enums.di.fast_storage import FastStorageType
 from infrastructure.repository.tortoise.models.account.account import AccountModel
 from infrastructure.repository.tortoise.models.account.account_auth_profile import AccountAuthProfileModel
 from infrastructure.repository.tortoise.models.account.account_session import AccountSessionModel
@@ -39,6 +41,7 @@ async def setup_test_environment() -> AsyncGenerator[None, None]:
     import infrastructure.access_control.password_hashers.bcrypt_password_hasher  # noqa: F401
     import infrastructure.access_control.token_providers.jwt_token_provider  # noqa: F401
     import infrastructure.auth.providers  # noqa: F401
+    import infrastructure.fast_storage  # noqa: F401
     import infrastructure.repository.tortoise.transaction  # noqa: F401
     import infrastructure.repository.tortoise.base.filters.bool_filter  # noqa: F401
     import infrastructure.repository.tortoise.base.filters.equal_filter  # noqa: F401
@@ -50,9 +53,12 @@ async def setup_test_environment() -> AsyncGenerator[None, None]:
 
     await Tortoise.init(config=TEST_TORTOISE_ORM)
     await Tortoise.generate_schemas()
+    old_fast_storage_type = settings.fast_storage.type
+    settings.fast_storage.type = FastStorageType.MEMORY
     try:
         yield
     finally:
+        settings.fast_storage.type = old_fast_storage_type
         await Tortoise.close_connections()
 
 

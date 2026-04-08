@@ -57,10 +57,18 @@ class AccessControlMessages:
             _(
                 "This auth profile is linked to another account (id={}). "
                 "If you continue, that account and all its activity will be deleted. "
-                "Repeat request with confirm_merge=true."
+                "Confirm by /profiles/link/confirm/ with operation_code."
             ).format(account_id)
         )
 
     @staticmethod
     def auth_provider_already_linked(provider_type: AuthProviderType) -> str:
         return str(_("Auth profile for provider already linked: {}").format(provider_type.get_label()))
+
+    @staticmethod
+    def auth_profile_merge_operation_not_found() -> str:
+        return str(_("Merge operation not found or expired"))
+
+    @staticmethod
+    def auth_profile_merge_operation_forbidden() -> str:
+        return str(_("Merge operation belongs to another account"))

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from typing import Any
+from uuid import uuid4
+
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
 from application.account.dto.auth.profile_management import AuthProfileLinkResponseDTO, AuthProfileDeleteResponseDTO
 from application.account.services.account import AccountService
 from application.account.services.account_auth_profile import AccountAuthProfileService
+from core.config.settings import settings
 from core.di.auth import DIAuthProviderData
 from core.di.repository import DIRepositoryTransaction
 from core.enums.app.account.auth_provider import AuthProviderType
 from core.enums.system.error_fields import ErrorFields
 from core.enums.system.logger.message_levels import LogMessageLevel
+from core.fast_storage import get_fast_storage
 from core.logger.logger import Logger
 from core.messages.account.access_control import AccessControlMessages
 from domain.account.entities.account import AccountEntity
@@ -40,8 +45,9 @@ class AuthProfileManagementUseCase:
             self,
             account: AccountEntity,
             provider_type: AuthProviderType,
-            provider_raw_data: dict,
+            provider_raw_data: dict[str, Any],
             confirm_merge: bool = False,
+            force_merge: bool = False,
     ) -> AuthProfileLinkResponseDTO:
         if account.id is None:
             raise DomainValidationException(
@@ -84,7 +90,7 @@ class AuthProfileManagementUseCase:
                     status="already_linked",
                     profile=AccountAuthProfileDTO.from_entity(existed_profile),
                 )
-            if not confirm_merge:
+            if not force_merge:
                 Logger.auth(
                     "auth.profile.link.merge_required",
                     level=LogMessageLevel.WARN,
@@ -93,9 +99,16 @@ class AuthProfileManagementUseCase:
                     conflict_account_id=existed_profile.account_id,
                     conflict_profile_id=existed_profile.id,
                 )
-                raise DomainValidationException(
-                    message=AccessControlMessages.auth_profile_merge_confirmation_required(existed_profile.account_id),
-                    field=ErrorFields.AUTH_PROVIDER_DATA,
+                operation_code = await self._create_merge_operation(
+                    account_id=account.id,
+                    provider_type=provider_type,
+                    provider_raw_data=provider_raw_data,
+                    conflict_account_id=existed_profile.account_id,
+                )
+                return AuthProfileLinkResponseDTO(
+                    status="confirmation_required",
+                    detail=AccessControlMessages.auth_profile_merge_confirmation_required(existed_profile.account_id),
+                    operation_code=operation_code,
                 )
 
             async with self.repository_transaction.start():
@@ -210,3 +223,101 @@ class AuthProfileManagementUseCase:
             profile_id=profile_id,
         )
         return AuthProfileDeleteResponseDTO(status="deleted", profile_id=profile_id)
+
+    async def confirm_link_merge(self, account: AccountEntity, operation_code: str) -> AuthProfileLinkResponseDTO:
+        if account.id is None:
+            raise DomainValidationException(
+                message=AccessControlMessages.account_not_found(),
+                field=ErrorFields.ACCOUNT,
+            )
+        Logger.auth(
+            "auth.profile.link.confirm.start",
+            account_id=account.id,
+            operation_code=operation_code,
+        )
+        operation = await self._get_merge_operation(operation_code)
+        if operation is None:
+            Logger.auth(
+                "auth.profile.link.confirm.operation_not_found",
+                level=LogMessageLevel.WARN,
+                account_id=account.id,
+                operation_code=operation_code,
+            )
+            raise DomainValidationException(
+                message=AccessControlMessages.auth_profile_merge_operation_not_found(),
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
+
+        op_account_id = int(operation.get("account_id") or 0)
+        if op_account_id != account.id:
+            Logger.auth(
+                "auth.profile.link.confirm.forbidden",
+                level=LogMessageLevel.WARN,
+                account_id=account.id,
+                operation_code=operation_code,
+                operation_account_id=op_account_id,
+            )
+            raise DomainValidationException(
+                message=AccessControlMessages.auth_profile_merge_operation_forbidden(),
+                field=ErrorFields.AUTH_PROVIDER_DATA,
+            )
+
+        provider_type = AuthProviderType(str(operation["provider_type"]))
+        provider_raw_data = operation["provider_raw_data"]
+        result = await self.link_profile(
+            account=account,
+            provider_type=provider_type,
+            provider_raw_data=provider_raw_data,
+            confirm_merge=True,
+            force_merge=True,
+        )
+        await self._delete_merge_operation(operation_code)
+        Logger.auth(
+            "auth.profile.link.confirm.success",
+            account_id=account.id,
+            operation_code=operation_code,
+            status=result.status,
+            profile_id=result.profile.id if result.profile else None,
+        )
+        return result
+
+    async def _create_merge_operation(
+            self,
+            account_id: int,
+            provider_type: AuthProviderType,
+            provider_raw_data: dict[str, Any],
+            conflict_account_id: int,
+    ) -> str:
+        operation_code = uuid4().hex
+        payload = {
+            "account_id": account_id,
+            "provider_type": str(provider_type),
+            "provider_raw_data": provider_raw_data,
+            "conflict_account_id": conflict_account_id,
+        }
+        storage = get_fast_storage()
+        await storage.set_json(
+            key=self._operation_key(operation_code),
+            value=payload,
+            ttl_seconds=settings.fast_storage.operation_ttl_seconds,
+        )
+        Logger.auth(
+            "auth.profile.link.operation.created",
+            account_id=account_id,
+            provider_type=str(provider_type),
+            conflict_account_id=conflict_account_id,
+            operation_code=operation_code,
+        )
+        return operation_code
+
+    async def _get_merge_operation(self, operation_code: str) -> dict[str, Any] | None:
+        storage = get_fast_storage()
+        return await storage.get_json(self._operation_key(operation_code))
+
+    async def _delete_merge_operation(self, operation_code: str) -> None:
+        storage = get_fast_storage()
+        await storage.delete(self._operation_key(operation_code))
+
+    @staticmethod
+    def _operation_key(operation_code: str) -> str:
+        return f"auth:profile:merge:{operation_code}"

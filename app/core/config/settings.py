@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .auth_settings import AuthSettings
 from .db_settings import DBSettings
+from .fast_storage_settings import FastStorageSettings
 from .frontend_settings import FrontendSettings
 from .storage_settings import StorageSettings
 from .system_settings import SystemSettings
@@ -16,6 +17,7 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     frontend: FrontendSettings = FrontendSettings()
     storage: StorageSettings = StorageSettings()
+    fast_storage: FastStorageSettings = FastStorageSettings()
     admin_user_model: str = "AccountModel"
     admin_user_model_username_field: str = "username"
 

@@ -55,10 +55,13 @@ apply-prod: env pgb-resources ## Apply all resources (namespace + postgres + app
 	kubectl apply -n $(NAMESPACE) -f minis3/bucket-job.yaml
 	kubectl apply -n $(NAMESPACE) -f pgbouncer/service.yaml
 	kubectl apply -n $(NAMESPACE) -f pgbouncer/deployment.yaml
+	kubectl apply -n $(NAMESPACE) -f redis/deployment.yaml
+	kubectl apply -n $(NAMESPACE) -f redis/service.yaml
 	kubectl apply -n $(NAMESPACE) -f app/
 
 delete: ## Delete all resources including namespace
 	kubectl delete -n $(NAMESPACE) -f app/
+	kubectl delete -n $(NAMESPACE) -f redis/ --ignore-not-found
 	kubectl delete -n $(NAMESPACE) -f minis3/
 	kubectl delete -n $(NAMESPACE) -f postgres/
 	kubectl delete -f namespace.yaml
@@ -74,7 +77,7 @@ pgbouncer: env pgb-resources ## Deploy PgBouncer
 app: env ## Deploy only the application
 	kubectl apply -n $(NAMESPACE) -f app/
 
-infra-start: env pgb-resources ## Start infra stack (postgres + minis3 + pgbouncer)
+infra-start: env pgb-resources ## Start infra stack (postgres + minis3 + pgbouncer + redis)
 	kubectl apply -f namespace.yaml
 	kubectl apply -n $(NAMESPACE) -f postgres/
 	kubectl apply -n $(NAMESPACE) -f minis3/pvc.yaml
@@ -84,8 +87,11 @@ infra-start: env pgb-resources ## Start infra stack (postgres + minis3 + pgbounc
 	kubectl apply -n $(NAMESPACE) -f minis3/bucket-job.yaml
 	kubectl apply -n $(NAMESPACE) -f pgbouncer/service.yaml
 	kubectl apply -n $(NAMESPACE) -f pgbouncer/deployment.yaml
+	kubectl apply -n $(NAMESPACE) -f redis/deployment.yaml
+	kubectl apply -n $(NAMESPACE) -f redis/service.yaml
 
-infra-stop: ## Stop infra stack (postgres + minis3 + pgbouncer)
+infra-stop: ## Stop infra stack (postgres + minis3 + pgbouncer + redis)
+	kubectl delete -n $(NAMESPACE) -f redis/ --ignore-not-found
 	kubectl delete -n $(NAMESPACE) -f pgbouncer/ --ignore-not-found
 	kubectl delete -n $(NAMESPACE) job minis3-init-bucket --ignore-not-found
 	kubectl delete -n $(NAMESPACE) -f minis3/service.yaml --ignore-not-found
@@ -152,8 +158,8 @@ help: ## Show this help message
 	@echo "  make delete        - Delete all resources including namespace"
 	@echo "  make postgres      - Deploy only PostgreSQL with PostGIS"
 	@echo "  make app           - Deploy only the application"
-	@echo "  make infra-start   - Start infra stack (postgres + minis3 + pgbouncer)"
-	@echo "  make infra-stop    - Stop infra stack (postgres + minis3 + pgbouncer)"
+	@echo "  make infra-start   - Start infra stack (postgres + minis3 + pgbouncer + redis)"
+	@echo "  make infra-stop    - Stop infra stack (postgres + minis3 + pgbouncer + redis)"
 	@echo "  make infra-stot    - Alias for infra-stop"
 	@echo "  make infra-reload  - Reload infra stack (stop + start)"
 	@echo "  make status        - Show pods and services status"

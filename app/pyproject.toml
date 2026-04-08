@@ -7,7 +7,7 @@ src_folder = "./"
 [project]
 name = "app"
 version = "0.1.0"
-dependencies = ["typer"]
+dependencies = ["typer", "redis>=5.0.0"]
 
 [project.scripts]
 app = "interfaces.cmd.app:app"
