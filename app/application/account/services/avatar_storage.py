@@ -72,6 +72,18 @@ class AvatarStorageService:
             content_type=content_type or "image/jpeg",
         )
 
+    @staticmethod
+    def _build_uploaded_key(filename: str | None, content: bytes, content_type: str | None) -> str:
+        suffix = ""
+        if filename:
+            suffix = Path(filename).suffix.strip()
+        if not suffix:
+            suffix = AvatarStorageService._guess_extension(filename or "avatar", content_type)
+        if suffix and not suffix.startswith("."):
+            suffix = f".{suffix}"
+        digest = hashlib.sha256(content).hexdigest()[:24]
+        return f"avatars/user/{digest}{suffix or '.jpg'}"
+
     async def persist_external_avatar(self, avatar_url: str | None) -> str | None:
         if not avatar_url:
             return avatar_url
@@ -102,3 +114,31 @@ class AvatarStorageService:
                 detail=str(exc),
             )
             return avatar_url
+
+    async def persist_uploaded_avatar(
+            self,
+            *,
+            filename: str | None,
+            content_type: str | None,
+            content: bytes,
+    ) -> str | None:
+        if not content:
+            return None
+        if len(content) > _MAX_AVATAR_SIZE_BYTES:
+            return None
+
+        key = self._build_uploaded_key(filename, content, content_type)
+        if settings.storage.type == StorageType.LOCAL:
+            self._save_local(key, content)
+        elif settings.storage.type == StorageType.MINIS3:
+            self._save_minis3(key, content, content_type or "image/jpeg")
+        else:
+            return None
+
+        Logger.auth(
+            "auth.avatar.uploaded",
+            storage_type=str(settings.storage.type),
+            key=key,
+            filename=filename or "",
+        )
+        return key

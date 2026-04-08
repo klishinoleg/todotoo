@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import Response
 
 from application.account.dto.account import AccountDTO
@@ -26,6 +26,7 @@ from application.account.dto.auth.request.oauth import AuthRequestOAuthLoginDTO,
 from application.account.dto.auth.request.oauth import OAuthProviderDataDTO
 from application.account.dto.auth.response import AuthResponseDTO
 from application.account.services.oauth_flow import OAuthFlowService
+from application.account.dto.profile import ProfileUpdateRequestDTO
 from core.enums.app.account.auth_provider import AuthActionType, AuthProviderType
 from core.enums.system.logger.message_levels import LogMessageLevel
 from core.logger.logger import Logger
@@ -36,6 +37,7 @@ from application.account.use_cases.auth.auth import AuthUseCase, AuthRequestTele
     AuthRequestLoginDTO
 from application.account.use_cases.auth.profile_management import AuthProfileManagementUseCase
 from application.account.use_cases.auth.password_email import PasswordEmailAuthUseCase
+from application.account.use_cases.profile.profile import ProfileUseCase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -51,6 +53,50 @@ async def auth_via_telegram(dto: AuthRequestTelegramDTO) -> AuthResponseDTO:
 @router.get("/me/", response_model=AccountDTO)
 async def get_me(account: AccountEntity = Depends(get_current_account)) -> AccountDTO:
     return await AuthUseCase().me(account)
+
+
+@router.get("/profile/", response_model=AccountDTO)
+async def get_profile(account: AccountEntity = Depends(get_current_account)) -> AccountDTO:
+    try:
+        return await ProfileUseCase().get_profile(account)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.patch("/profile/", response_model=AccountDTO)
+async def update_profile(
+        data: ProfileUpdateRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AccountDTO:
+    try:
+        return await ProfileUseCase().update_profile(account, data)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/profile/avatar/", response_model=AccountDTO)
+async def upload_profile_avatar(
+        file: UploadFile = File(...),
+        account: AccountEntity = Depends(get_current_account),
+) -> AccountDTO:
+    try:
+        content = await file.read()
+        return await ProfileUseCase().upload_avatar(
+            account,
+            filename=file.filename,
+            content_type=file.content_type,
+            content=content,
+        )
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.delete("/profile/avatar/", response_model=AccountDTO)
+async def delete_profile_avatar(account: AccountEntity = Depends(get_current_account)) -> AccountDTO:
+    try:
+        return await ProfileUseCase().delete_avatar(account)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
 
 
 @router.get("/profiles/", response_model=list[AccountAuthProfileDTO])

@@ -88,3 +88,11 @@ class AccessControlMessages:
     @staticmethod
     def password_recovery_code_invalid_or_expired() -> str:
         return str(_("Password recovery code is invalid or expired"))
+
+    @staticmethod
+    def invalid_profile_language(language: str) -> str:
+        return str(_("Unsupported profile language: {}").format(language))
+
+    @staticmethod
+    def invalid_avatar_file() -> str:
+        return str(_("Invalid avatar file"))
