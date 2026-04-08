@@ -30,6 +30,20 @@ GOOGLE_PROVIDER_DATA = {
     },
 }
 
+FACEBOOK_PROVIDER_DATA = {
+    "id": "9876543210",
+    "name": "Mark Tester",
+    "email": "mark.tester@example.com",
+    "picture": {
+        "data": {
+            "url": "https://graph.facebook.com/mock/picture.jpg",
+        }
+    },
+    "raw_data": {
+        "source": "facebook_graph",
+    },
+}
+
 
 @pytest.mark.asyncio
 async def test_google_callback_creates_account_and_then_reuses_existing() -> None:
@@ -59,6 +73,41 @@ async def test_google_callback_creates_account_and_then_reuses_existing() -> Non
     assert first.auth.provider_id == GOOGLE_PROVIDER_DATA["sub"]
 
     # Second callback should log in to the same binding, not create duplicate rows.
+    assert second.account.id == first.account.id
+    assert second.auth.id == first.auth.id
+
+    assert await AccountModel.all().count() == 1
+    assert await AccountAuthProfileModel.all().count() == 1
+
+
+@pytest.mark.asyncio
+async def test_facebook_callback_creates_account_and_then_reuses_existing() -> None:
+    callback_dto = OAuthCallbackDTO(
+        code="mock-facebook-code",
+        state=None,
+        redirect_uri="https://todotoo.ngrok.app/auth/facebook/callback",
+        action_type=None,
+        user=None,
+    )
+
+    with patch(
+        "application.account.services.oauth_flow.OAuthFlowService.exchange_code_for_provider_data",
+        new=AsyncMock(return_value=FACEBOOK_PROVIDER_DATA),
+    ), patch(
+        "application.account.services.avatar_storage.AvatarStorageService.persist_external_avatar",
+        new=AsyncMock(return_value="avatars/oauth/mock-fb-avatar.jpg"),
+    ):
+        first = await oauth_callback(AuthProviderType.FACEBOOK, callback_dto)
+        second = await oauth_callback(AuthProviderType.FACEBOOK, callback_dto)
+
+    assert first.account.id is not None
+    assert first.token
+    assert first.account.username == "mark.tester@example.com"
+    assert first.account.public_name == "Mark Tester"
+    assert first.account.avatar is not None
+    assert first.auth.provider_type == AuthProviderType.FACEBOOK
+    assert first.auth.provider_id == FACEBOOK_PROVIDER_DATA["id"]
+
     assert second.account.id == first.account.id
     assert second.auth.id == first.auth.id
 

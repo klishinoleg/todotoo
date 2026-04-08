@@ -24,12 +24,13 @@ class OAuthProviderDataDTO(BaseModel):
     email_verified: bool = False
 
     username: str | None = None
+    name: str | None = None
     first_name: str | None = None
     last_name: str | None = None
     avatar_url: str | None = None
     given_name: str | None = None
     family_name: str | None = None
-    picture: str | None = None
+    picture: str | dict[str, Any] | None = None
     raw_data: dict[str, Any] | None = None
 
     # Telegram Web Login support
@@ -50,8 +51,23 @@ class OAuthProviderDataDTO(BaseModel):
             self.first_name = self.given_name
         if not self.last_name and self.family_name:
             self.last_name = self.family_name
+        if self.name and (not self.first_name or not self.last_name) and " " in self.name:
+            first, _, last = self.name.partition(" ")
+            if not self.first_name:
+                self.first_name = first
+            if not self.last_name:
+                self.last_name = last
         if not self.avatar_url:
-            self.avatar_url = self.picture or self.photo_url
+            if isinstance(self.picture, str):
+                self.avatar_url = self.picture
+            elif isinstance(self.picture, dict):
+                picture_data = self.picture.get("data")
+                if isinstance(picture_data, dict):
+                    url = picture_data.get("url")
+                    if isinstance(url, str):
+                        self.avatar_url = url
+            if not self.avatar_url:
+                self.avatar_url = self.photo_url
 
         return self
 

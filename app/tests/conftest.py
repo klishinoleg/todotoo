@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from pathlib import Path
+import sys
 
 import pytest_asyncio
 from tortoise import Tortoise
+
+APP_ROOT = Path(__file__).resolve().parents[1]
+if str(APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(APP_ROOT))
+
+from infrastructure.repository.tortoise.models.account.account import AccountModel
+from infrastructure.repository.tortoise.models.account.account_auth_profile import AccountAuthProfileModel
+from infrastructure.repository.tortoise.models.account.account_session import AccountSessionModel
 
 
 TEST_TORTOISE_ORM = {
@@ -44,3 +54,11 @@ async def setup_test_environment() -> AsyncGenerator[None, None]:
         yield
     finally:
         await Tortoise.close_connections()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def clear_tables_between_tests() -> AsyncGenerator[None, None]:
+    await AccountSessionModel.all().delete()
+    await AccountAuthProfileModel.all().delete()
+    await AccountModel.all().delete()
+    yield

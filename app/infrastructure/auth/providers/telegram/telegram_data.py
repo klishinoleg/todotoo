@@ -8,7 +8,7 @@ from core.config.settings import settings
 from core.di.auth import DIAuthProviderData
 from core.enums.app.account.auth_provider import AuthProviderType
 from domain.account.entities.auth.provider_data import BaseAuthProviderData
-from infrastructure.auth.providers.telegram.telegram_types import TelegramInitData, TgUser
+from infrastructure.auth.providers.telegram.telegram_types import TelegramInitData, TgChat, TgUser
 
 
 @dataclass(slots=True)
@@ -25,8 +25,19 @@ class TelegramProviderData(BaseAuthProviderData):
     def __init__(self, provider_raw_data: dict) -> None:
         super().__init__(provider_raw_data)
 
+        normalized = dict(self._provider_raw_data)
+        user = normalized.get("user")
+        if isinstance(user, dict):
+            normalized["user"] = TgUser(**user)
+        receiver = normalized.get("receiver")
+        if isinstance(receiver, dict):
+            normalized["receiver"] = TgUser(**receiver)
+        chat = normalized.get("chat")
+        if isinstance(chat, dict):
+            normalized["chat"] = TgChat(**chat)
+
         # Convert raw dict → typed dataclass
-        self._telegram_data = TelegramInitData(**self._provider_raw_data)
+        self._telegram_data = TelegramInitData(**normalized)
 
         # Quick access to user
         self._u = self._telegram_data.user
