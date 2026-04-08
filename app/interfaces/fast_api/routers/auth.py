@@ -4,6 +4,15 @@ from fastapi.responses import Response
 from application.account.dto.account import AccountDTO
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
 from application.account.dto.auth.oauth_flow import OAuthAuthorizeUrlDTO, OAuthCallbackDTO
+from application.account.dto.auth.password_email import (
+    AuthChangePasswordRequestDTO,
+    AuthMailPasswordResponseDTO,
+    AuthRecoverPasswordRequestDTO,
+    AuthRegisterByEmailRequestDTO,
+    AuthResetPasswordByCodeRequestDTO,
+    AuthSetPasswordRequestDTO,
+    AuthSetPasswordResponseDTO,
+)
 from application.account.dto.auth.profile_management import (
     AuthProfileLinkConfirmRequestDTO,
     AuthProfileOAuthCallbackLinkRequestDTO,
@@ -26,6 +35,7 @@ from interfaces.fast_api.deps.account import get_current_account
 from application.account.use_cases.auth.auth import AuthUseCase, AuthRequestTelegramDTO, AuthRequestSignUpDTO, \
     AuthRequestLoginDTO
 from application.account.use_cases.auth.profile_management import AuthProfileManagementUseCase
+from application.account.use_cases.auth.password_email import PasswordEmailAuthUseCase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -192,6 +202,52 @@ async def logout(account: AccountEntity = Depends(get_current_account)) -> Respo
 async def signup(data: AuthRequestSignUpDTO) -> AuthResponseDTO:
     try:
         return await AuthUseCase().register(data)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/register-by-email/", response_model=AuthMailPasswordResponseDTO)
+async def register_by_email(data: AuthRegisterByEmailRequestDTO) -> AuthMailPasswordResponseDTO:
+    try:
+        return await PasswordEmailAuthUseCase().register_by_email(data)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/password/recover/", response_model=AuthMailPasswordResponseDTO)
+async def recover_password(data: AuthRecoverPasswordRequestDTO) -> AuthMailPasswordResponseDTO:
+    try:
+        return await PasswordEmailAuthUseCase().recover_password(data)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/password/reset/", response_model=AuthMailPasswordResponseDTO)
+async def reset_password_by_code(data: AuthResetPasswordByCodeRequestDTO) -> AuthMailPasswordResponseDTO:
+    try:
+        return await PasswordEmailAuthUseCase().reset_password_by_code(data)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/password/set/", response_model=AuthSetPasswordResponseDTO)
+async def set_password_if_missing(
+        data: AuthSetPasswordRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthSetPasswordResponseDTO:
+    try:
+        return await PasswordEmailAuthUseCase().set_password_if_missing(account, data)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/password/change/", response_model=AuthSetPasswordResponseDTO)
+async def change_password(
+        data: AuthChangePasswordRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthSetPasswordResponseDTO:
+    try:
+        return await PasswordEmailAuthUseCase().change_password(account, data)
     except DomainValidationException as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
 

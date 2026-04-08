@@ -23,6 +23,7 @@ def _bootstrap_di() -> None:
     # Storage providers
     import infrastructure.storage  # noqa: F401
     import infrastructure.fast_storage  # noqa: F401
+    import infrastructure.email  # noqa: F401
 
     # Access control providers
     import infrastructure.access_control.password_hashers.bcrypt_password_hasher  # noqa: F401

@@ -72,3 +72,19 @@ class AccessControlMessages:
     @staticmethod
     def auth_profile_merge_operation_forbidden() -> str:
         return str(_("Merge operation belongs to another account"))
+
+    @staticmethod
+    def password_already_set() -> str:
+        return str(_("Password is already set for this account"))
+
+    @staticmethod
+    def password_profile_required() -> str:
+        return str(_("Password profile not found for the provided email"))
+
+    @staticmethod
+    def email_already_registered() -> str:
+        return str(_("Email is already registered"))
+
+    @staticmethod
+    def password_recovery_code_invalid_or_expired() -> str:
+        return str(_("Password recovery code is invalid or expired"))

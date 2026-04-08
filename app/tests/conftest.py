@@ -42,6 +42,7 @@ async def setup_test_environment() -> AsyncGenerator[None, None]:
     import infrastructure.access_control.token_providers.jwt_token_provider  # noqa: F401
     import infrastructure.auth.providers  # noqa: F401
     import infrastructure.fast_storage  # noqa: F401
+    import infrastructure.email  # noqa: F401
     import infrastructure.repository.tortoise.transaction  # noqa: F401
     import infrastructure.repository.tortoise.base.filters.bool_filter  # noqa: F401
     import infrastructure.repository.tortoise.base.filters.equal_filter  # noqa: F401

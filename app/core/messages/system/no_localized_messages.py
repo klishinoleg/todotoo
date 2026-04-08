@@ -33,6 +33,7 @@ class SystemMessages:
     FILTER_NOT_REGISTERED = "Filter implementation is not registered"
     STORAGE_PROVIDER_NOT_REGISTERED = "Storage provider implementation is not registered"
     FAST_STORAGE_PROVIDER_NOT_REGISTERED = "Fast storage provider implementation is not registered"
+    EMAIL_SENDER_PROVIDER_NOT_REGISTERED = "Email sender provider implementation is not registered"
 
     # Auth provider: specific auth provider exceptions
     UNKNOW_AUTH_PROVIDER_ERROR = "Unknown auth provider exception occurred"
