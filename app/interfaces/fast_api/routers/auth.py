@@ -4,6 +4,13 @@ from fastapi.responses import Response
 from application.account.dto.account import AccountDTO
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
 from application.account.dto.auth.oauth_flow import OAuthAuthorizeUrlDTO, OAuthCallbackDTO
+from application.account.dto.auth.profile_management import (
+    AuthProfileOAuthCallbackLinkRequestDTO,
+    AuthPasswordProfileLinkRequestDTO,
+    AuthProfileDeleteResponseDTO,
+    AuthProfileLinkRequestDTO,
+    AuthProfileLinkResponseDTO,
+)
 from application.account.dto.auth.request.oauth import AuthRequestOAuthDTO
 from application.account.dto.auth.request.oauth import AuthRequestOAuthLoginDTO, AuthRequestOAuthSignUpDTO
 from application.account.dto.auth.request.oauth import OAuthProviderDataDTO
@@ -17,6 +24,7 @@ from domain.base.exceptions import DomainValidationException
 from interfaces.fast_api.deps.account import get_current_account
 from application.account.use_cases.auth.auth import AuthUseCase, AuthRequestTelegramDTO, AuthRequestSignUpDTO, \
     AuthRequestLoginDTO
+from application.account.use_cases.auth.profile_management import AuthProfileManagementUseCase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -38,7 +46,121 @@ async def get_me(account: AccountEntity = Depends(get_current_account)) -> Accou
 async def get_profiles(
         account: AccountEntity = Depends(get_current_account)
 ) -> list[AccountAuthProfileDTO]:
-    return await AuthUseCase().profiles(account)
+    try:
+        return await AuthProfileManagementUseCase().list_profiles(account)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/profiles/link/", response_model=AuthProfileLinkResponseDTO)
+async def link_auth_profile(
+        data: AuthProfileLinkRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthProfileLinkResponseDTO:
+    try:
+        return await AuthProfileManagementUseCase().link_profile(
+            account=account,
+            provider_type=data.provider_type,
+            provider_raw_data=data.provider_data,
+            confirm_merge=data.confirm_merge,
+        )
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/profiles/link/password/", response_model=AuthProfileLinkResponseDTO)
+async def link_password_profile(
+        data: AuthPasswordProfileLinkRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthProfileLinkResponseDTO:
+    try:
+        provider_raw_data = {
+            "email": data.email,
+            "password": data.password,
+            "confirm_password": data.confirm_password,
+            "public_name": data.public_name,
+            "language_code": data.language_code,
+        }
+        return await AuthProfileManagementUseCase().link_profile(
+            account=account,
+            provider_type=AuthProviderType.PASSWORD,
+            provider_raw_data=provider_raw_data,
+            confirm_merge=data.confirm_merge,
+        )
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.delete("/profiles/{profile_id}/", response_model=AuthProfileDeleteResponseDTO)
+async def delete_profile(
+        profile_id: int,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthProfileDeleteResponseDTO:
+    try:
+        return await AuthProfileManagementUseCase().delete_profile(account, profile_id)
+    except DomainValidationException as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
+
+
+@router.post("/profiles/link/oauth/{provider_type}/callback/", response_model=AuthProfileLinkResponseDTO)
+async def link_oauth_profile_callback(
+        provider_type: AuthProviderType,
+        data: AuthProfileOAuthCallbackLinkRequestDTO,
+        account: AccountEntity = Depends(get_current_account),
+) -> AuthProfileLinkResponseDTO:
+    service = OAuthFlowService()
+    try:
+        Logger.auth(
+            "api.auth.profile.link.oauth.callback.start",
+            provider_type=str(provider_type),
+            account_id=account.id,
+            has_state=bool(data.state),
+            has_redirect_uri=bool(data.redirect_uri),
+            has_action_type=bool(data.action_type),
+            has_user=bool(data.user),
+            confirm_merge=data.confirm_merge,
+        )
+        if data.state:
+            service.resolve_action_type(provider_type, data.state, data.action_type)
+        provider_data = await service.exchange_code_for_provider_data(
+            provider_type=provider_type,
+            code=data.code,
+            redirect_uri=data.redirect_uri,
+            user=data.user,
+        )
+        provider_data_dto = OAuthProviderDataDTO.model_validate(provider_data)
+        Logger.auth(
+            "api.auth.profile.link.oauth.callback.provider_data.ready",
+            provider_type=str(provider_type),
+            account_id=account.id,
+            has_provider_user_id=bool(provider_data_dto.provider_user_id),
+            has_email=bool(provider_data_dto.email),
+        )
+        result = await AuthProfileManagementUseCase().link_profile(
+            account=account,
+            provider_type=provider_type,
+            provider_raw_data=provider_data,
+            confirm_merge=data.confirm_merge,
+        )
+        Logger.auth(
+            "api.auth.profile.link.oauth.callback.success",
+            provider_type=str(provider_type),
+            account_id=account.id,
+            status=result.status,
+            profile_id=result.profile.id,
+            merged_account_id=result.merged_account_id,
+            merged_account_deleted=result.merged_account_deleted,
+        )
+        return result
+    except DomainValidationException as exc:
+        Logger.auth(
+            "api.auth.profile.link.oauth.callback.error",
+            level=LogMessageLevel.WARN,
+            provider_type=str(provider_type),
+            account_id=account.id,
+            detail=exc.message,
+        )
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
 
 
 @router.post("/logout/", status_code=status.HTTP_204_NO_CONTENT)

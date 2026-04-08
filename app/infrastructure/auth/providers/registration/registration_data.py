@@ -51,12 +51,13 @@ class RegistrationProviderData(BaseAuthProviderData):
 
     def prepare_for_storage(self) -> Self:
         if self._data.password:
-            _data = replace(self._data,
-                            password_hash=DIPasswordHasherProvider.get().hash(self._data.password),
-                            password="",
-                            confirm_password=""
-                            )
-            return replace(self, _data=_data, _provider_raw_data=asdict(_data))
+            self._data = replace(
+                self._data,
+                password_hash=DIPasswordHasherProvider.get().hash(self._data.password),
+                password="",
+                confirm_password="",
+            )
+            self._provider_raw_data = asdict(self._data)
         return self
 
 DIAuthProviderData.register(AuthProviderType.PASSWORD, RegistrationProviderData)
