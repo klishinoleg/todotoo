@@ -10,6 +10,12 @@ from core.enums.system.logger.message_levels import LogMessageLevel
 from core.logger.logger import Logger
 from domain.base.exceptions import DomainValidationException
 from infrastructure.auth.oauth_handlers.base import OAuthHandlerSupport, OAuthProviderHandler
+from infrastructure.auth.oauth_handlers.constants import (
+    GOOGLE_AUTHORIZE_URL,
+    GOOGLE_SCOPE,
+    GOOGLE_TOKEN_URL,
+    GOOGLE_USERINFO_URL,
+)
 
 
 class GoogleOAuthHandler(OAuthProviderHandler):
@@ -24,11 +30,11 @@ class GoogleOAuthHandler(OAuthProviderHandler):
                 "client_id": client_id,
                 "redirect_uri": callback_uri,
                 "response_type": "code",
-                "scope": "openid email profile",
+                "scope": GOOGLE_SCOPE,
                 "state": state,
             }
         )
-        return f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
+        return f"{GOOGLE_AUTHORIZE_URL}?{query}"
 
     def exchange_code(
             self,
@@ -47,7 +53,7 @@ class GoogleOAuthHandler(OAuthProviderHandler):
         )
 
         token_response = OAuthHandlerSupport.http_post_form_json(
-            "https://oauth2.googleapis.com/token",
+            GOOGLE_TOKEN_URL,
             data={
                 "code": code,
                 "client_id": client_id,
@@ -70,7 +76,7 @@ class GoogleOAuthHandler(OAuthProviderHandler):
         userinfo: dict[str, Any] = {}
         if access_token:
             userinfo = OAuthHandlerSupport.http_get_json(
-                "https://openidconnect.googleapis.com/v1/userinfo",
+                GOOGLE_USERINFO_URL,
                 headers={"Authorization": f"Bearer {access_token}"},
             )
 

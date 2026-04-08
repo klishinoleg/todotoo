@@ -4,6 +4,11 @@ import secrets
 import string
 from uuid import uuid4
 
+from application.account.constants.auth import (
+    PASSWORD_EMAIL_SUBJECT,
+    PASSWORD_RECOVERY_EMAIL_SUBJECT,
+    PASSWORD_RECOVERY_KEY_PREFIX,
+)
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
 from application.account.dto.auth.password_email import (
     AuthChangePasswordRequestDTO,
@@ -23,6 +28,7 @@ from core.config.settings import settings
 from core.email import get_email_sender
 from core.fast_storage import get_fast_storage
 from core.enums.app.account.auth_provider import AuthProviderType
+from core.enums.app.account.auth_status import AuthMailStatus, AuthPasswordStatus
 from core.enums.system.error_fields import ErrorFields
 from core.messages.account.access_control import AccessControlMessages
 from domain.account.entities.account import AccountEntity
@@ -61,8 +67,8 @@ class PasswordEmailAuthUseCase:
             language_code=dto.language_code,
         )
 
-        await self._send_password_email(email, password, subject="Your login password")
-        return AuthMailPasswordResponseDTO(status="sent", email=email)
+        await self._send_password_email(email, password, subject=PASSWORD_EMAIL_SUBJECT)
+        return AuthMailPasswordResponseDTO(status=AuthMailStatus.SENT, email=email)
 
     async def recover_password(self, dto: AuthRecoverPasswordRequestDTO) -> AuthMailPasswordResponseDTO:
         email = dto.email.strip().lower()
@@ -75,7 +81,7 @@ class PasswordEmailAuthUseCase:
         code = await self._create_password_recovery_code(email)
         link = self._build_recovery_link(code)
         await self._send_recovery_email(email, link)
-        return AuthMailPasswordResponseDTO(status="sent", email=email)
+        return AuthMailPasswordResponseDTO(status=AuthMailStatus.SENT, email=email)
 
     async def reset_password_by_code(self, dto: AuthResetPasswordByCodeRequestDTO) -> AuthMailPasswordResponseDTO:
         if dto.password != dto.confirm_password:
@@ -96,7 +102,7 @@ class PasswordEmailAuthUseCase:
                 field=ErrorFields.AUTH_PROVIDER_DATA,
             )
         await self._set_profile_password(profile, dto.password)
-        return AuthMailPasswordResponseDTO(status="reset", email=email)
+        return AuthMailPasswordResponseDTO(status=AuthMailStatus.RESET, email=email)
 
     async def set_password_if_missing(
             self, account: AccountEntity, dto: AuthSetPasswordRequestDTO
@@ -122,7 +128,7 @@ class PasswordEmailAuthUseCase:
                     field=ErrorFields.AUTH_PROVIDER_DATA,
                 )
             updated = await self._set_profile_password(password_profile, dto.password)
-            return AuthSetPasswordResponseDTO(status="set", profile=AccountAuthProfileDTO.from_entity(updated))
+            return AuthSetPasswordResponseDTO(status=AuthPasswordStatus.SET, profile=AccountAuthProfileDTO.from_entity(updated))
 
         email = (account.email or account.username or "").strip().lower()
         if not email:
@@ -137,7 +143,7 @@ class PasswordEmailAuthUseCase:
             public_name=account.public_name,
             language_code=account.language,
         )
-        return AuthSetPasswordResponseDTO(status="set", profile=AccountAuthProfileDTO.from_entity(created))
+        return AuthSetPasswordResponseDTO(status=AuthPasswordStatus.SET, profile=AccountAuthProfileDTO.from_entity(created))
 
     async def change_password(
             self, account: AccountEntity, dto: AuthChangePasswordRequestDTO
@@ -170,7 +176,7 @@ class PasswordEmailAuthUseCase:
             )
 
         updated = await self._set_profile_password(password_profile, dto.password)
-        return AuthSetPasswordResponseDTO(status="changed", profile=AccountAuthProfileDTO.from_entity(updated))
+        return AuthSetPasswordResponseDTO(status=AuthPasswordStatus.CHANGED, profile=AccountAuthProfileDTO.from_entity(updated))
 
     async def _create_account_with_password_profile(
             self, *, email: str, password: str, public_name: str | None, language_code: str | None
@@ -307,7 +313,7 @@ class PasswordEmailAuthUseCase:
 
     @staticmethod
     def _recovery_key(code: str) -> str:
-        return f"auth:password:recovery:{code}"
+        return f"{PASSWORD_RECOVERY_KEY_PREFIX}:{code}"
 
     @staticmethod
     def _build_recovery_link(code: str) -> str:
@@ -327,4 +333,4 @@ class PasswordEmailAuthUseCase:
             f"{recovery_link}\n\n"
             "If you did not request a reset, ignore this email.\n"
         )
-        await sender.send_email(to_email=email, subject="Password recovery", text_body=text)
+        await sender.send_email(to_email=email, subject=PASSWORD_RECOVERY_EMAIL_SUBJECT, text_body=text)

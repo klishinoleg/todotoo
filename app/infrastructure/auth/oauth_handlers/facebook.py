@@ -7,6 +7,13 @@ from core.config.settings import settings
 from core.enums.system.error_fields import ErrorFields
 from domain.base.exceptions import DomainValidationException
 from infrastructure.auth.oauth_handlers.base import OAuthHandlerSupport, OAuthProviderHandler
+from infrastructure.auth.oauth_handlers.constants import (
+    FACEBOOK_AUTHORIZE_URL,
+    FACEBOOK_SCOPE,
+    FACEBOOK_TOKEN_URL,
+    FACEBOOK_USERINFO_URL,
+    FACEBOOK_USER_FIELDS,
+)
 
 
 class FacebookOAuthHandler(OAuthProviderHandler):
@@ -21,11 +28,11 @@ class FacebookOAuthHandler(OAuthProviderHandler):
                 "client_id": app_id,
                 "redirect_uri": callback_uri,
                 "response_type": "code",
-                "scope": "email,public_profile",
+                "scope": FACEBOOK_SCOPE,
                 "state": state,
             }
         )
-        return f"https://www.facebook.com/v22.0/dialog/oauth?{query}"
+        return f"{FACEBOOK_AUTHORIZE_URL}?{query}"
 
     def exchange_code(
             self,
@@ -48,14 +55,14 @@ class FacebookOAuthHandler(OAuthProviderHandler):
                 "code": code,
             }
         )
-        token_url = f"https://graph.facebook.com/v22.0/oauth/access_token?{token_query}"
+        token_url = f"{FACEBOOK_TOKEN_URL}?{token_query}"
         token_response = OAuthHandlerSupport.http_get_json(token_url)
         access_token = str(token_response.get("access_token") or "")
         if not access_token:
             raise DomainValidationException("Facebook access token not found", field=ErrorFields.AUTH_PROVIDER_DATA)
 
         user_query = urllib.parse.urlencode(
-            {"fields": "id,name,email,picture", "access_token": access_token}
+            {"fields": FACEBOOK_USER_FIELDS, "access_token": access_token}
         )
-        userinfo = OAuthHandlerSupport.http_get_json(f"https://graph.facebook.com/v22.0/me?{user_query}")
+        userinfo = OAuthHandlerSupport.http_get_json(f"{FACEBOOK_USERINFO_URL}?{user_query}")
         return OAuthHandlerSupport.attach_raw_data(userinfo)

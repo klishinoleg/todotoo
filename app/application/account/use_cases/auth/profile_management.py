@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
+from application.account.constants.auth import PROFILE_MERGE_KEY_PREFIX
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
 from application.account.dto.auth.profile_management import AuthProfileLinkResponseDTO, AuthProfileDeleteResponseDTO
 from application.account.services.account import AccountService
@@ -11,6 +12,7 @@ from core.config.settings import settings
 from core.di.auth import DIAuthProviderData
 from core.di.repository import DIRepositoryTransaction
 from core.enums.app.account.auth_provider import AuthProviderType
+from core.enums.app.account.auth_status import AuthProfileDeleteStatus, AuthProfileLinkStatus
 from core.enums.system.error_fields import ErrorFields
 from core.enums.system.logger.message_levels import LogMessageLevel
 from core.fast_storage import get_fast_storage
@@ -87,7 +89,7 @@ class AuthProfileManagementUseCase:
                     profile_id=existed_profile.id,
                 )
                 return AuthProfileLinkResponseDTO(
-                    status="already_linked",
+                    status=AuthProfileLinkStatus.ALREADY_LINKED,
                     profile=AccountAuthProfileDTO.from_entity(existed_profile),
                 )
             if not force_merge:
@@ -106,7 +108,7 @@ class AuthProfileManagementUseCase:
                     conflict_account_id=existed_profile.account_id,
                 )
                 return AuthProfileLinkResponseDTO(
-                    status="confirmation_required",
+                    status=AuthProfileLinkStatus.CONFIRMATION_REQUIRED,
                     detail=AccessControlMessages.auth_profile_merge_confirmation_required(existed_profile.account_id),
                     operation_code=operation_code,
                 )
@@ -139,7 +141,7 @@ class AuthProfileManagementUseCase:
                 profile_id=created_profile.id,
             )
             return AuthProfileLinkResponseDTO(
-                status="linked",
+                status=AuthProfileLinkStatus.LINKED,
                 profile=AccountAuthProfileDTO.from_entity(created_profile),
                 merged_account_id=existed_profile.account_id,
                 merged_account_deleted=True,
@@ -158,7 +160,7 @@ class AuthProfileManagementUseCase:
             profile_id=created_profile.id,
         )
         return AuthProfileLinkResponseDTO(
-            status="linked",
+            status=AuthProfileLinkStatus.LINKED,
             profile=AccountAuthProfileDTO.from_entity(created_profile),
         )
 
@@ -222,7 +224,7 @@ class AuthProfileManagementUseCase:
             account_id=account.id,
             profile_id=profile_id,
         )
-        return AuthProfileDeleteResponseDTO(status="deleted", profile_id=profile_id)
+        return AuthProfileDeleteResponseDTO(status=AuthProfileDeleteStatus.DELETED, profile_id=profile_id)
 
     async def confirm_link_merge(self, account: AccountEntity, operation_code: str) -> AuthProfileLinkResponseDTO:
         if account.id is None:
@@ -320,4 +322,4 @@ class AuthProfileManagementUseCase:
 
     @staticmethod
     def _operation_key(operation_code: str) -> str:
-        return f"auth:profile:merge:{operation_code}"
+        return f"{PROFILE_MERGE_KEY_PREFIX}:{operation_code}"

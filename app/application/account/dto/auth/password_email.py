@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from application.account.dto.account_auth_profile import AccountAuthProfileDTO
+from core.enums.app.account.auth_status import AuthMailStatus, AuthPasswordStatus
 
 
 class AuthRegisterByEmailRequestDTO(BaseModel):
@@ -31,10 +32,10 @@ class AuthResetPasswordByCodeRequestDTO(BaseModel):
 
 
 class AuthMailPasswordResponseDTO(BaseModel):
-    status: str
+    status: AuthMailStatus
     email: str
 
 
 class AuthSetPasswordResponseDTO(BaseModel):
-    status: str
+    status: AuthPasswordStatus
     profile: AccountAuthProfileDTO

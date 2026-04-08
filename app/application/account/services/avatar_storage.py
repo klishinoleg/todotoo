@@ -7,6 +7,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from application.account.constants.avatar import OAUTH_AVATAR_KEY_PREFIX, USER_AVATAR_KEY_PREFIX
 from core.config.settings import settings
 from core.enums.di.storage import StorageType
 from core.enums.system.logger.message_levels import LogMessageLevel
@@ -45,7 +46,7 @@ class AvatarStorageService:
     def _build_key(source_url: str, content: bytes, content_type: str) -> str:
         digest = hashlib.sha256(content).hexdigest()[:24]
         ext = AvatarStorageService._guess_extension(source_url, content_type)
-        return f"avatars/oauth/{digest}{ext}"
+        return f"{OAUTH_AVATAR_KEY_PREFIX}/{digest}{ext}"
 
     @staticmethod
     def _save_local(key: str, content: bytes) -> None:
@@ -82,7 +83,7 @@ class AvatarStorageService:
         if suffix and not suffix.startswith("."):
             suffix = f".{suffix}"
         digest = hashlib.sha256(content).hexdigest()[:24]
-        return f"avatars/user/{digest}{suffix or '.jpg'}"
+        return f"{USER_AVATAR_KEY_PREFIX}/{digest}{suffix or '.jpg'}"
 
     async def persist_external_avatar(self, avatar_url: str | None) -> str | None:
         if not avatar_url:

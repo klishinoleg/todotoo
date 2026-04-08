@@ -1,0 +1,15 @@
+GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+GOOGLE_SCOPE = "openid email profile"
+
+FACEBOOK_AUTHORIZE_URL = "https://www.facebook.com/v22.0/dialog/oauth"
+FACEBOOK_TOKEN_URL = "https://graph.facebook.com/v22.0/oauth/access_token"
+FACEBOOK_USERINFO_URL = "https://graph.facebook.com/v22.0/me"
+FACEBOOK_SCOPE = "email,public_profile"
+FACEBOOK_USER_FIELDS = "id,name,email,picture"
+
+APPLE_AUTHORIZE_URL = "https://appleid.apple.com/auth/authorize"
+APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token"
+APPLE_AUDIENCE = "https://appleid.apple.com"
+APPLE_SCOPE = "name email"

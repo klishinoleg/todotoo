@@ -11,6 +11,12 @@ from core.config.settings import settings
 from core.enums.system.error_fields import ErrorFields
 from domain.base.exceptions import DomainValidationException
 from infrastructure.auth.oauth_handlers.base import OAuthHandlerSupport, OAuthProviderHandler
+from infrastructure.auth.oauth_handlers.constants import (
+    APPLE_AUDIENCE,
+    APPLE_AUTHORIZE_URL,
+    APPLE_SCOPE,
+    APPLE_TOKEN_URL,
+)
 
 
 class AppleOAuthHandler(OAuthProviderHandler):
@@ -26,11 +32,11 @@ class AppleOAuthHandler(OAuthProviderHandler):
                 "response_mode": "form_post",
                 "client_id": client_id,
                 "redirect_uri": callback_uri,
-                "scope": "name email",
+                "scope": APPLE_SCOPE,
                 "state": state,
             }
         )
-        return f"https://appleid.apple.com/auth/authorize?{query}"
+        return f"{APPLE_AUTHORIZE_URL}?{query}"
 
     def exchange_code(
             self,
@@ -46,7 +52,7 @@ class AppleOAuthHandler(OAuthProviderHandler):
         client_secret = self._build_apple_client_secret()
 
         token_response = OAuthHandlerSupport.http_post_form_json(
-            "https://appleid.apple.com/auth/token",
+            APPLE_TOKEN_URL,
             data={
                 "client_id": client_id,
                 "client_secret": client_secret,
@@ -76,7 +82,7 @@ class AppleOAuthHandler(OAuthProviderHandler):
             "iss": team_id,
             "iat": now_ts,
             "exp": now_ts + 300,
-            "aud": "https://appleid.apple.com",
+            "aud": APPLE_AUDIENCE,
             "sub": client_id,
         }
         return str(
