@@ -1,0 +1,6 @@
+from .idea_event import IdeaEventTortoiseRepository
+from .event_participant import IdeaEventParticipantTortoiseRepository
+from .event_media import IdeaEventMediaTortoiseRepository
+from .event_comment import IdeaEventCommentTortoiseRepository
+from .event_reaction import IdeaEventReactionTortoiseRepository
+

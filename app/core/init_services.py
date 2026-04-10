@@ -51,6 +51,24 @@ def _bootstrap_di() -> None:
     import infrastructure.repository.tortoise.repositories.event.event_occurrence  # noqa: F401
     import infrastructure.repository.tortoise.repositories.event.event_occurrence_message  # noqa: F401
     import infrastructure.repository.tortoise.repositories.event.event_schedule_rule  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea.idea  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_participant.idea_participant  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_participant.participation_request  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.plan.plan  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.plan.plan_step  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.meeting.meeting  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.meeting.meeting_participant  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_event.idea_event  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_event.event_participant  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_event.event_media  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_event.event_comment  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.idea_event.event_reaction  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.discussion.discussion  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.discussion.discussion_message  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.discussion.discussion_attachment  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.motivation.motivator  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.activity_log.idea_activity  # noqa: F401
+    import infrastructure.repository.tortoise.repositories.calendar.calendar_item  # noqa: F401
 
 
 async def init_services(skip_publisher: bool = False) -> None:

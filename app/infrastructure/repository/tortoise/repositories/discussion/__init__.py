@@ -1,0 +1,4 @@
+from .discussion import DiscussionTortoiseRepository
+from .discussion_message import DiscussionMessageTortoiseRepository
+from .discussion_attachment import DiscussionAttachmentTortoiseRepository
+

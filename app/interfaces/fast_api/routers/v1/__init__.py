@@ -14,6 +14,7 @@ from .meeting import router as meeting_router
 from .motivation import router as motivation_router
 from .plan import router as plan_router
 from .tag import router as tag_router
+from .upload import router as upload_router
 
 router = APIRouter(tags=["v1"])
 router.include_router(config_router)
@@ -30,4 +31,4 @@ router.include_router(discussion_router)
 router.include_router(motivation_router)
 router.include_router(activity_log_router)
 router.include_router(calendar_router)
-
+router.include_router(upload_router)
