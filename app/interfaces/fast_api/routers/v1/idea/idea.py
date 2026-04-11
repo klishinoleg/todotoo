@@ -1,9 +1,11 @@
+import base64
+import binascii
 import secrets
 from datetime import timedelta
 from typing import Any
 
 from fastapi import Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from tortoise.exceptions import IntegrityError
 
 from application.idea.use_cases.crud.idea import IdeaCrudUseCase
@@ -12,11 +14,15 @@ from core.config.settings import settings
 from core.di.email import DIEmailSenderProvider
 from core.enums.app.activity_log.idea_activity_type import IdeaActivityTypeEnum
 from core.enums.app.idea_participant.participant_status import ParticipantStatusEnum
+from core.logger.logger import Logger
+from core.logger.messages.idea_create_failed import IdeaCreateFailedMessage
 from core.helpers.func.date_time import get_utc_time
 from domain.account.entities.account import AccountEntity
 from domain.base.exceptions import DomainValidationException
 from interfaces.fast_api.deps.account import get_current_account
 from interfaces.fast_api.routers.v1.base.crud import V1CrudRouter
+from interfaces.fast_api.routers.v1.upload import _ALLOWED_IMAGE_TYPES, _MAX_IMAGE_BYTES, _build_key, _store
+from core.storage import get_storage
 from infrastructure.repository.tortoise.models.activity_log.idea_activity import IdeaActivityModel
 from infrastructure.repository.tortoise.models.idea.idea import IdeaModel
 from infrastructure.repository.tortoise.models.idea_invite.idea_invite import IdeaInviteModel
@@ -84,6 +90,19 @@ class IdeaListResponseDTO(BaseModel):
     per_page: int
 
 
+class IdeaCreatePayloadDTO(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    data: dict[str, Any] = Field(default_factory=dict)
+    title: str | None = None
+    description: str | None = None
+    slogan: str | None = None
+    cover_image: str | None = None
+    visibility: str | None = None
+    status: str | None = None
+    is_active: bool | None = None
+
+
 def _require_account_id(account: AccountEntity) -> int:
     if account.id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
@@ -122,6 +141,65 @@ class IdeaRouter(V1CrudRouter[IdeaCrudUseCase]):
     prefix = "/ideas"
     tags = ["v1/idea"]
     use_case_cls = IdeaCrudUseCase
+    create_payload_model = IdeaCreatePayloadDTO
+
+    @staticmethod
+    def _sanitize_payload_for_log(payload: dict[str, Any]) -> dict[str, Any]:
+        sanitized = dict(payload)
+        cover_image = sanitized.get("cover_image")
+        if isinstance(cover_image, str) and cover_image.startswith("data:"):
+            sanitized["cover_image"] = f"<data-uri len={len(cover_image)}>"
+        return sanitized
+
+    @staticmethod
+    def _parse_data_url_image(value: str) -> tuple[str, bytes]:
+        if not value.startswith("data:image/") or ";base64," not in value:
+            raise DomainValidationException("Invalid cover_image data URI")
+
+        meta, encoded = value.split(",", 1)
+        content_type = meta[5:].split(";", 1)[0].strip().lower()
+        if content_type not in _ALLOWED_IMAGE_TYPES:
+            raise DomainValidationException("Unsupported image type for cover_image")
+        try:
+            content = base64.b64decode(encoded, validate=True)
+        except (binascii.Error, ValueError):
+            raise DomainValidationException("Invalid base64 in cover_image")
+        if len(content) == 0 or len(content) > _MAX_IMAGE_BYTES:
+            raise DomainValidationException("Invalid cover_image size")
+        return content_type, content
+
+    async def preprocess_create_payload(self, payload: dict[str, Any], account: AccountEntity) -> dict[str, Any]:
+        cover_image = payload.get("cover_image")
+        if cover_image is None:
+            return payload
+        if not isinstance(cover_image, str):
+            raise DomainValidationException("cover_image must be string or null")
+
+        normalized = cover_image.strip()
+        if normalized.startswith("data:image/"):
+            content_type, content = self._parse_data_url_image(normalized)
+            key = _build_key("images", "idea-cover", content, content_type)
+            _store(key, content, content_type)
+            url = get_storage().get_url(key)
+            if not url:
+                raise DomainValidationException("Failed to persist cover_image")
+            payload["cover_image"] = url
+            return payload
+
+        if len(normalized) > 1024:
+            raise DomainValidationException("cover_image is too long")
+        payload["cover_image"] = normalized
+        return payload
+
+    async def on_create_failed(self, payload: dict[str, Any], account: AccountEntity, reason: str) -> None:
+        Logger.warn(
+            IdeaCreateFailedMessage(
+                authorized=account.id is not None,
+                account_id=account.id,
+                reason=reason,
+                payload=self._sanitize_payload_for_log(payload),
+            )
+        )
 
     def register_custom_routes(self) -> None:
         router = self.router

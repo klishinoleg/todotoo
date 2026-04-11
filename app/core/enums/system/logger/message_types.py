@@ -8,3 +8,4 @@ class LogMessageType(str, Enum):
     OBJ_DELETED = "obj_deleted"
     OBJ_UPDATED = "obj_updated"
     MEASURE_FUNC_TIME = "measure_func_time"
+    IDEA_CREATE_FAILED = "idea_create_failed"

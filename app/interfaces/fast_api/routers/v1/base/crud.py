@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from abc import ABC
 from enum import Enum
+from json import JSONDecodeError
 from typing import Any, Protocol, cast
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
-from starlette.requests import Request
 
 from application.base.dto.crud import CrudDeleteResponseDTO, CrudListResponseDTO, CrudPayloadDTO
 from application.base.use_case.crud import CrudEntityNotFound
@@ -56,6 +56,17 @@ class V1CrudRouter[UC: CrudRouterUseCaseProtocol](ABC):
     def register_custom_routes(self) -> None:
         return None
 
+    async def preprocess_create_payload(self, payload: dict[str, Any], account: AccountEntity) -> dict[str, Any]:
+        return payload
+
+    async def on_create_failed(
+            self,
+            payload: dict[str, Any],
+            account: AccountEntity,
+            reason: str,
+    ) -> None:
+        return None
+
     def _register_standard_routes(self) -> None:
         router = self.router
         create_payload_model = self.create_payload_model
@@ -93,31 +104,55 @@ class V1CrudRouter[UC: CrudRouterUseCaseProtocol](ABC):
 
         @router.post("/", response_model=dict[str, Any], status_code=status.HTTP_201_CREATED)
         async def create_item(
-                data: create_payload_model,  # type: ignore
+                request: Request,
                 account: AccountEntity = Depends(get_current_account),
         ) -> dict[str, Any]:
+            payload: dict[str, Any] = {}
             try:
                 use_case = self.get_use_case(account)
-                payload = cast(BaseModel, data).model_dump()
-                if "data" in payload and isinstance(payload["data"], dict):
-                    payload = payload["data"]
+                try:
+                    raw_payload = await request.json()
+                except JSONDecodeError:
+                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid JSON body")
+                if not isinstance(raw_payload, dict):
+                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="JSON body must be object")
+                payload = dict(raw_payload)
+                wrapped = payload.get("data")
+                if isinstance(wrapped, dict):
+                    if wrapped:
+                        payload = wrapped
+                    else:
+                        payload = {k: v for k, v in payload.items() if k != "data"}
+                payload = await self.preprocess_create_payload(payload, account)
                 return await use_case.create(payload)
             except DomainValidationException as exc:
+                await self.on_create_failed(payload, account, exc.message)
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message)
             except RepositoryException as exc:
+                await self.on_create_failed(payload, account, str(exc))
                 raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc))
 
         @router.put("/{entity_id:int}/", response_model=dict[str, Any])
         async def update_item(
                 entity_id: int,
-                data: update_payload_model,  # type: ignore
+                request: Request,
                 account: AccountEntity = Depends(get_current_account),
         ) -> dict[str, Any]:
             try:
                 use_case = self.get_use_case(account)
-                payload = cast(BaseModel, data).model_dump(exclude_unset=True)
-                if "data" in payload and isinstance(payload["data"], dict):
-                    payload = payload["data"]
+                try:
+                    raw_payload = await request.json()
+                except JSONDecodeError:
+                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid JSON body")
+                if not isinstance(raw_payload, dict):
+                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="JSON body must be object")
+                payload = dict(raw_payload)
+                wrapped = payload.get("data")
+                if isinstance(wrapped, dict):
+                    if wrapped:
+                        payload = wrapped
+                    else:
+                        payload = {k: v for k, v in payload.items() if k != "data"}
                 return await use_case.update(entity_id, payload)
             except CrudEntityNotFound as exc:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.message)

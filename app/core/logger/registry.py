@@ -2,6 +2,7 @@ from typing import Union
 
 from core.logger.base import LogMessage
 from core.logger.messages.already_exist import AlreadyExistMessage
+from core.logger.messages.idea_create_failed import IdeaCreateFailedMessage
 from core.logger.messages.not_found import NotFoundMessage
 from core.logger.messages.obj_created import ObjCreatedMessage
 from core.logger.messages.obj_deleted import ObjDeletedMessage
@@ -9,6 +10,7 @@ from core.logger.messages.obj_updated import ObjUpdatedMessage
 
 AllLogMessages = Union[
     AlreadyExistMessage,
+    IdeaCreateFailedMessage,
     NotFoundMessage,
     ObjCreatedMessage,
     ObjDeletedMessage,
@@ -21,6 +23,7 @@ LOG_MESSAGE_PAYLOAD_FIELD = "payload"
 # Dict to restore by type
 LOG_MESSAGE_CLASSES: list[type[LogMessage]] = [
     AlreadyExistMessage,
+    IdeaCreateFailedMessage,
     NotFoundMessage,
     ObjCreatedMessage,
     ObjDeletedMessage,
