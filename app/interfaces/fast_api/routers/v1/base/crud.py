@@ -76,7 +76,7 @@ class V1CrudRouter[UC: CrudRouterUseCaseProtocol](ABC):
             except RepositoryException as exc:
                 raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc))
 
-        @router.get("/{entity_id}/", response_model=dict[str, Any])
+        @router.get("/{entity_id:int}/", response_model=dict[str, Any])
         async def get_item(
                 entity_id: int,
                 account: AccountEntity = Depends(get_current_account),
@@ -107,7 +107,7 @@ class V1CrudRouter[UC: CrudRouterUseCaseProtocol](ABC):
             except RepositoryException as exc:
                 raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc))
 
-        @router.put("/{entity_id}/", response_model=dict[str, Any])
+        @router.put("/{entity_id:int}/", response_model=dict[str, Any])
         async def update_item(
                 entity_id: int,
                 data: update_payload_model,  # type: ignore
@@ -126,7 +126,7 @@ class V1CrudRouter[UC: CrudRouterUseCaseProtocol](ABC):
             except RepositoryException as exc:
                 raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc))
 
-        @router.delete("/{entity_id}/", response_model=CrudDeleteResponseDTO)
+        @router.delete("/{entity_id:int}/", response_model=CrudDeleteResponseDTO)
         async def delete_item(
                 entity_id: int,
                 account: AccountEntity = Depends(get_current_account),
